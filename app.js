@@ -535,8 +535,10 @@ async function importData(e) {
 
   const reader = new FileReader();
   reader.onload = async function (ev) {
+    console.log('📄 File loaded, parsing JSON...');
     try {
       const rawData = JSON.parse(ev.target.result);
+      console.log('📦 Parsed Data:', rawData);
 
       // Normalize data (handle both cl_ prefixed and legacy keys)
       const data = {
@@ -547,28 +549,35 @@ async function importData(e) {
         settings: rawData.cl_settings || rawData.settings || {}
       };
 
+      console.log('✅ Normalized Data:', data);
+
       if (!data.collections.length && !data.deposits.length && !data.locations.length && !data.banks.length && !Object.keys(data.settings).length) {
+        console.warn('⚠️ No valid data found in file');
         throw new Error('Invalid format');
       }
 
       toast('⌛ กำลังนำเข้าข้อมูล...', 'info');
 
       // Import Collections
+      console.log('🚀 Importing collections:', data.collections.length);
       for (const item of data.collections) {
         await apiRequest('/collections', 'POST', item);
       }
 
       // Import Deposits
+      console.log('🚀 Importing deposits:', data.deposits.length);
       for (const item of data.deposits) {
         await apiRequest('/deposits', 'POST', item);
       }
 
       // Import Locations
+      console.log('🚀 Importing locations:', data.locations.length);
       for (const loc of data.locations) {
         await addLocationApi(loc);
       }
 
       // Import Banks
+      console.log('🚀 Importing banks:', data.banks.length);
       for (const bank of data.banks) {
         // Handle both string array and object array forms
         const bankName = typeof bank === 'string' ? bank : bank.name;
@@ -577,9 +586,11 @@ async function importData(e) {
 
       // Import Settings
       if (Object.keys(data.settings).length) {
+        console.log('🚀 Importing settings');
         await saveSettingApi(data.settings);
       }
 
+      console.log('🎉 Import sequence complete');
       toast('✅ นำเข้าข้อมูลสำเร็จแล้ว!');
       await syncData();
 
