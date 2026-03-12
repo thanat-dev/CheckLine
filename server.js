@@ -73,7 +73,7 @@ const initDb = async () => {
     } catch (err) {
         console.error('Database initialization error:', err);
     } finally {
-        client.release();
+        if (client) client.release();
     }
 };
 
