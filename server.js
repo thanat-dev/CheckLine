@@ -13,12 +13,6 @@ app.use(bodyParser.json());
 app.use(express.static('./')); // Serve frontend files
 
 // Database Connection
-if (!process.env.DATABASE_URL) {
-    console.error('❌ ERROR: DATABASE_URL is not defined in environment variables!');
-} else {
-    console.log('✅ DATABASE_URL is detected');
-}
-
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -28,11 +22,8 @@ const pool = new Pool({
 
 // Initialize Database Tables
 const initDb = async () => {
-    console.log('🔄 Attempting to connect to database...');
-    let client;
+    const client = await pool.connect();
     try {
-        client = await pool.connect();
-        console.log('📡 Connected to database, initializing tables...');
         await client.query(`
       CREATE TABLE IF NOT EXISTS collections (
         id TEXT PRIMARY KEY,
@@ -69,11 +60,61 @@ const initDb = async () => {
         value TEXT
       );
     `);
+    
+    // Seed default locations if empty
+    const locCheck = await client.query('SELECT COUNT(*) FROM locations');
+    if (parseInt(locCheck.rows[0].count) === 0) {
+      console.log('Seeding default locations...');
+      const defaultLocs = [
+        ['โรงพยาบาลพระมงกุฎเกล้า', '1: พญาไท / พระราม 6'],
+        ['สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า', '1: พญาไท / พระราม 6'],
+        ['บริษัท พีเอ็มเควิทยาเวช จำกัด (ร้านยาสิรินธรโอสถ รพ.พระมงกุฎ)', '1: พญาไท / พระราม 6'],
+        ['สถาบันวิจัยวิทยาศาสตร์การแพทย์ทหาร', '1: พญาไท / พระราม 6'],
+        ['กองคลังแพทย์ กรมแพทย์ทหารบก', '1: พญาไท / พระราม 6'],
+        ['องค์การเภสัชกรรม สำนักงานใหญ่', '1: พญาไท / พระราม 6'],
+        ['โรงพยาบาลทหารผ่านศึก', '1: พญาไท / พระราม 6'],
+        
+        ['โรงพยาบาลภูมิพลอดุลยเดช', '2: ดอนเมือง / สายไหม'],
+        ['กรมแพทย์ทหารอากาศ', '2: ดอนเมือง / สายไหม'],
+        ['สถาบันเวชศาสตร์การบิน กองทัพอากาศ', '2: ดอนเมือง / สายไหม'],
+        ['โรงพยาบาลทหารอากาศ (สีกัน)', '2: ดอนเมือง / สายไหม'],
+        ['ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย', '2: ดอนเมือง / สายไหม'],
+        ['สสน.นทพ.', '2: ดอนเมือง / สายไหม'],
+        
+        ['โรงพยาบาลวิภาวดี (กรุงเทพฯ)', '3: จตุจักร / นนทบุรี'],
+        ['โรงเรียนช่างฝีมือทหาร สถาบันวิชาการป้องกันประเทศ', '3: จตุจักร / นนทบุรี'],
+        ['ทัณฑสถานโรงพยาบาลราชทัณฑ์', '3: จตุจักร / นนทบุรี'],
+        ['แผนกแพทย์ กองบริหาร กรมช่างอากาศ', '3: จตุจักร / นนทบุรี'],
+        ['การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย', '3: จตุจักร / นนทบุรี'],
+        ['กรมการแพทย์ กระทรวงสาธารณสุข', '3: จตุจักร / นนทบุรี'],
+        
+        ['โรงพยาบาลกลาง', '4: พระนคร / ดุสิต'],
+        ['กรมแผนที่ทหาร', '4: พระนคร / ดุสิต'],
+        ['มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์', '4: พระนคร / ดุสิต'],
+        ['กองงานในพระองค์สมเด็จพระกนิษฐาราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี', '4: พระนคร / ดุสิต'],
+        
+        ['มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)', '5: ปทุมวัน / ดินแดง'],
+        ['กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย', '5: ปทุมวัน / ดินแดง'],
+        
+        ['โรงพยาบาลสมเด็จพระปิ่นเกล้า', '6: ฝั่งธนบุรี'],
+        ['กรมแพทย์ทหารเรือ', '6: ฝั่งธนบุรี'],
+        
+        ['การกีฬาแห่งประเทศไทย', '7: รามคำแหง / สมุทรปราการ'],
+        ['บริษัท กรุงเทพดรักสโตร์ จำกัด', '7: รามคำแหง / สมุทรปราการ'],
+        ['โรงพยาบาลทหารเรือกรุงเทพ', '7: รามคำแหง / สมุทรปราการ'],
+        ['บริษัท สินแพทย์ เทพารักษ์ จำกัด', '7: รามคำแหง / สมุทรปราการ']
+      ];
+      
+      for (const [name, zone] of defaultLocs) {
+        await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, zone]);
+      }
+    }
+
         console.log('Database initialized successfully');
     } catch (err) {
         console.error('Database initialization error:', err);
     } finally {
-        if (client) client.release();
+        client.release();
     }
 };
 
@@ -87,7 +128,6 @@ app.get('/api/collections', async (req, res) => {
         const result = await pool.query('SELECT * FROM collections ORDER BY date DESC');
         res.json(result.rows);
     } catch (err) {
-        console.error('API Error (/api/collections GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -104,7 +144,6 @@ app.post('/api/collections', async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
-        console.error('API Error (/api/collections POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -124,7 +163,6 @@ app.get('/api/deposits', async (req, res) => {
         const result = await pool.query('SELECT * FROM deposits ORDER BY date DESC');
         res.json(result.rows);
     } catch (err) {
-        console.error('API Error (/api/deposits GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -141,7 +179,6 @@ app.post('/api/deposits', async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
-        console.error('API Error (/api/deposits POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -161,7 +198,6 @@ app.get('/api/locations', async (req, res) => {
         const result = await pool.query('SELECT * FROM locations ORDER BY name');
         res.json(result.rows);
     } catch (err) {
-        console.error('API Error (/api/locations GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -172,7 +208,6 @@ app.post('/api/locations', async (req, res) => {
         await pool.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET zone=$2', [name, zone]);
         res.json({ success: true });
     } catch (err) {
-        console.error('API Error (/api/locations POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -192,7 +227,6 @@ app.get('/api/banks', async (req, res) => {
         const result = await pool.query('SELECT * FROM banks ORDER BY name');
         res.json(result.rows);
     } catch (err) {
-        console.error('API Error (/api/banks GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -203,7 +237,6 @@ app.post('/api/banks', async (req, res) => {
         await pool.query('INSERT INTO banks (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
         res.json({ success: true });
     } catch (err) {
-        console.error('API Error (/api/banks POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -225,7 +258,6 @@ app.get('/api/settings', async (req, res) => {
         result.rows.forEach(row => settings[row.key] = row.value);
         res.json(settings);
     } catch (err) {
-        console.error('API Error (/api/settings GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -238,7 +270,6 @@ app.post('/api/settings', async (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
-        console.error('API Error (/api/settings POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
