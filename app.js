@@ -248,11 +248,11 @@ async function copyToClipboard() {
 // ==================== DATALISTS ====================
 function updateLocationDatalist() {
   const dl = document.getElementById('location-list');
-  dl.innerHTML = getData('cl_locations').map(l => `<option value="${l.name}">`).join('');
+  dl.innerHTML = getData(KEYS.locations).map(l => `<option value="${l.name}">`).join('');
 }
 function updateBankDatalist() {
   const dl = document.getElementById('bank-list');
-  dl.innerHTML = getData('cl_banks').map(b => `<option value="${b}">`).join('');
+  dl.innerHTML = getData(KEYS.banks).map(b => `<option value="${b}">`).join('');
 }
 
 // ==================== COLLECTION CRUD ====================
@@ -312,7 +312,7 @@ function renderCollections() {
 }
 
 function editCollection(id) {
-  const c = getData('cl_collections').find(x => x.id === id);
+  const c = getData(KEYS.collections).find(x => x.id === id);
   if (!c) return;
   document.getElementById('col-edit-id').value = c.id;
   document.getElementById('col-location').value = c.location;
@@ -351,7 +351,7 @@ async function saveDeposit(e) {
 }
 
 function renderDeposits() {
-  let deps = getData('cl_deposits');
+  let deps = getData(KEYS.deposits);
   const dateF = document.getElementById('filter-dep-date').value;
   const statusF = document.getElementById('filter-dep-status').value;
   const searchF = document.getElementById('filter-dep-search').value.toLowerCase();
@@ -375,7 +375,7 @@ function renderDeposits() {
 }
 
 function editDeposit(id) {
-  const d = getData('cl_deposits').find(x => x.id === id);
+  const d = getData(KEYS.deposits).find(x => x.id === id);
   if (!d) return;
   document.getElementById('dep-edit-id').value = d.id;
   document.getElementById('dep-bank').value = d.bank;
@@ -412,8 +412,8 @@ async function deleteItem(id, type) {
 
 // ==================== DASHBOARD ====================
 function renderDashboard() {
-  const cols = getData('cl_collections');
-  const deps = getData('cl_deposits');
+  const cols = getData(KEYS.collections);
+  const deps = getData(KEYS.deposits);
   const now = new Date();
   const thisMonth = now.toISOString().slice(0, 7);
 
@@ -428,7 +428,7 @@ function renderDashboard() {
 
   // Recent items
   const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 ฝากธนาคาร', _name: d.bank }))];
-  all.sort((a, b) => (b.id.includes('_') ? parseInt(b.id.split('_')[1]) : 0) - (a.id.includes('_') ? parseInt(a.id.split('_')[1]) : 0));
+  all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const recent = all.slice(0, 8);
 
   const tbody = document.getElementById('recent-table');
@@ -508,13 +508,13 @@ function renderBankTags() {
 
 // ==================== EXPORT / IMPORT ====================
 function exportData() {
-  const data = {
-    cl_collections: getData('cl_collections'),
-    cl_deposits: getData('cl_deposits'),
-    cl_locations: getData('cl_locations'),
-    cl_banks: getData('cl_banks'),
-    cl_settings: getSettings(),
-    exportDate: new Date().toISOString()
+  const data = { 
+    collections: _state.collections, 
+    deposits: _state.deposits, 
+    locations: _state.locations, 
+    banks: _state.banks, 
+    settings: _state.settings, 
+    exportDate: new Date().toISOString() 
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -528,75 +528,34 @@ async function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
 
-  if (!confirm('⚠️ การนำเข้าข้อมูลจะเขียนทับข้อมูลในฐานข้อมูลด้วยไฟล์นี้ ต้องการดำเนินการต่อหรือไม่?')) {
+  if (!confirm('⚠️ การนำเข้าข้อมูลจะเขียนทับฐานข้อมูลกลาง (PostgreSQL) ทั้งหมด ต้องการดำเนินการต่อหรือไม่?')) {
     e.target.value = '';
     return;
   }
 
   const reader = new FileReader();
   reader.onload = async function (ev) {
-    console.log('📄 File loaded, parsing JSON...');
     try {
-      const rawData = JSON.parse(ev.target.result);
-      console.log('📦 Parsed Data:', rawData);
-
-      // Normalize data (handle both cl_ prefixed and legacy keys)
-      const data = {
-        collections: rawData.cl_collections || rawData.collections || [],
-        deposits: rawData.cl_deposits || rawData.deposits || [],
-        locations: rawData.cl_locations || rawData.locations || [],
-        banks: rawData.cl_banks || rawData.banks || [],
-        settings: rawData.cl_settings || rawData.settings || {}
-      };
-
-      console.log('✅ Normalized Data:', data);
-
-      if (!data.collections.length && !data.deposits.length && !data.locations.length && !data.banks.length && !Object.keys(data.settings).length) {
-        console.warn('⚠️ No valid data found in file');
+      const data = JSON.parse(ev.target.result);
+      if (!data.collections && !data.deposits && !data.locations && !data.banks && !data.settings) {
         throw new Error('Invalid format');
       }
 
-      toast('⌛ กำลังนำเข้าข้อมูล...', 'info');
-
-      // Import Collections
-      console.log('🚀 Importing collections:', data.collections.length);
-      for (const item of data.collections) {
-        await apiRequest('/collections', 'POST', item);
+      toast('⌛ กำลังนำเข้าข้อมูลไปยังฐานข้อมูลกลาง...', 'info');
+      const result = await apiRequest('/import', 'POST', data);
+      
+      if (result && result.success) {
+        toast('✅ นำเข้าข้อมูลสำเร็จแล้ว ระบบกำลังรีเฟรช...');
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      } else {
+        throw new Error('Server import failed');
       }
-
-      // Import Deposits
-      console.log('🚀 Importing deposits:', data.deposits.length);
-      for (const item of data.deposits) {
-        await apiRequest('/deposits', 'POST', item);
-      }
-
-      // Import Locations
-      console.log('🚀 Importing locations:', data.locations.length);
-      for (const loc of data.locations) {
-        await addLocationApi(loc);
-      }
-
-      // Import Banks
-      console.log('🚀 Importing banks:', data.banks.length);
-      for (const bank of data.banks) {
-        // Handle both string array and object array forms
-        const bankName = typeof bank === 'string' ? bank : bank.name;
-        await addBankApi(bankName);
-      }
-
-      // Import Settings
-      if (Object.keys(data.settings).length) {
-        console.log('🚀 Importing settings');
-        await saveSettingApi(data.settings);
-      }
-
-      console.log('🎉 Import sequence complete');
-      toast('✅ นำเข้าข้อมูลสำเร็จแล้ว!');
-      await syncData();
 
     } catch (err) {
       console.error('Import error:', err);
-      toast('❌ รูปแบบไฟล์ไม่ถูกต้อง', 'error');
+      toast('❌ ไฟล์ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการบันทึก', 'error');
     }
   };
   reader.readAsText(file);
@@ -612,11 +571,11 @@ async function backupToDrive() {
   }
 
   const data = {
-    cl_collections: getData('cl_collections'),
-    cl_deposits: getData('cl_deposits'),
-    cl_locations: getData('cl_locations'),
-    cl_banks: getData('cl_banks'),
-    cl_settings: settings,
+    collections: _state.collections,
+    deposits: _state.deposits,
+    locations: _state.locations,
+    banks: _state.banks,
+    settings: settings,
     exportDate: new Date().toISOString(),
     filename: `CheckLine_backup_${today()}.json`
   };
@@ -642,14 +601,11 @@ async function backupToDrive() {
   }
 }
 
-function clearAllData() {
-  if (!confirm('⚠️ ต้องการลบข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
-  // This should ideally call a "Clear All" API if needed, but for now we reset state
-  _state.collections = [];
-  _state.deposits = [];
-  initDefaults();
+async function clearAllData() {
+  if (!confirm('⚠️ ต้องการลบข้อมูลทั้งหมดจากฐานข้อมูลกลาง? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
+  await apiRequest('/all', 'DELETE');
+  await initDefaults();
   toast('ลบข้อมูลทั้งหมดสำเร็จ');
-  renderDashboard(); renderSettings();
 }
 
 // ==================== COPY REPORT & ITINERARY ====================
@@ -669,8 +625,8 @@ function sendDepositNotify(item, isUpdate = false) {
 
 function sendDailySummary() {
   const todayStr = document.getElementById('filter-col-date')?.value || today();
-  const cols = getData('cl_collections').filter(c => c.date === todayStr);
-  const deps = getData('cl_deposits').filter(d => d.date === todayStr);
+  const cols = getData(KEYS.collections).filter(c => c.date === todayStr);
+  const deps = getData(KEYS.deposits).filter(d => d.date === todayStr);
   if (!cols.length && !deps.length) { toast('ไม่มีงานวันนี้', 'info'); return; }
 
   let msg = `📊 สรุปรายงานงานวันที่ ${fmtDate(todayStr)}\n━━━━━━━━━━━━━━━`;
@@ -688,7 +644,7 @@ function sendDailySummary() {
 }
 
 function generateItinerary() {
-  const tasks = getData('cl_collections').filter(t => t.status === 'pending');
+  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
   if (tasks.length === 0) {
     toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
     return;
@@ -733,7 +689,7 @@ function getZoneOrderByTitle(title) {
 }
 
 function openItinerarySelector() {
-  const tasks = getData('cl_collections').filter(t => t.status === 'pending');
+  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
   if (tasks.length === 0) {
     toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
     return;
@@ -777,7 +733,7 @@ function generateSelectedItinerary() {
     return;
   }
 
-  const allTasks = getData('cl_collections');
+  const allTasks = getData(KEYS.collections);
   const selectedTasks = allTasks.filter(t => checked.includes(t.id.toString()));
 
   // Sort selected tasks by zone

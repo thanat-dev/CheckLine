@@ -263,15 +263,90 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.post('/api/settings', async (req, res) => {
-    const settings = req.body;
-    try {
-        for (const [key, value] of Object.entries(settings)) {
-            await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value=$2', [key, value]);
-        }
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+  const settings = req.body;
+  try {
+    for (const [key, value] of Object.entries(settings)) {
+      await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value=$2', [key, value]);
     }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// BULK IMPORT
+app.post('/api/import', async (req, res) => {
+  const { collections, deposits, locations, banks, settings } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Clear existing data (optional, but requested by user's "overwrite" logic)
+    await client.query('DELETE FROM collections');
+    await client.query('DELETE FROM deposits');
+    await client.query('DELETE FROM locations');
+    await client.query('DELETE FROM banks');
+    await client.query('DELETE FROM settings');
+
+    if (collections) {
+      for (const c of collections) {
+        await client.query(
+          `INSERT INTO collections (id, date, location, check_count, total_amount, contact_name, contact_phone, notes, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [c.id, c.date, c.location, c.checkCount, c.totalAmount, c.contactName, c.contactPhone, c.notes, c.status]
+        );
+      }
+    }
+    if (deposits) {
+      for (const d of deposits) {
+        await client.query(
+          `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [d.id, d.date, d.bank, d.branch, d.checkCount, d.totalAmount, d.notes, d.status]
+        );
+      }
+    }
+    if (locations) {
+      for (const l of locations) {
+        await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [l.name, l.zone || l.type]);
+      }
+    }
+    if (banks) {
+      for (const b of banks) {
+        const name = typeof b === 'string' ? b : b.name;
+        await client.query('INSERT INTO banks (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
+      }
+    }
+    if (settings) {
+      for (const [key, value] of Object.entries(settings)) {
+        await client.query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value=$2', [key, value]);
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE ALL DATA
+app.delete('/api/all', async (req, res) => {
+  try {
+    await pool.query('BEGIN');
+    await pool.query('DELETE FROM collections');
+    await pool.query('DELETE FROM deposits');
+    await pool.query('DELETE FROM locations');
+    await pool.query('DELETE FROM banks');
+    await pool.query('DELETE FROM settings');
+    await pool.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(port, () => {
