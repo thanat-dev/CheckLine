@@ -461,18 +461,39 @@ function exportData() {
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  if (!confirm('⚠️ การนำเข้าข้อมูลจะเขียนทับข้อมูลปัจจุบันทั้งหมดในเครื่องนี้ ต้องการดำเนินการต่อหรือไม่?')) {
+    e.target.value = '';
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = function (ev) {
     try {
       const data = JSON.parse(ev.target.result);
+
+      // Ensure we have at least one valid key
+      if (!data.collections && !data.deposits && !data.locations && !data.banks && !data.settings) {
+        throw new Error('Invalid format');
+      }
+
       if (data.collections) setData(KEYS.collections, data.collections);
       if (data.deposits) setData(KEYS.deposits, data.deposits);
       if (data.locations) setData(KEYS.locations, data.locations);
       if (data.banks) setData(KEYS.banks, data.banks);
       if (data.settings) saveSettings(data.settings);
-      toast('Import ข้อมูลสำเร็จ');
-      renderDashboard(); renderSettings();
-    } catch { toast('ไฟล์ไม่ถูกต้อง', 'error'); }
+
+      toast('✅ นำเข้าข้อมูลสำเร็จแล้ว ระบบกำลังรีเฟรช...');
+
+      // Full refresh after a short delay to ensure everything is saved and re-rendered
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+
+    } catch (err) {
+      console.error('Import error:', err);
+      toast('❌ ไฟล์ไม่ถูกต้อง หรือรูปแบบข้อมูลผิดพลาด', 'error');
+    }
   };
   reader.readAsText(file);
   e.target.value = '';
