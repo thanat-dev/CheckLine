@@ -719,7 +719,7 @@ function openItinerarySelector() {
     div.style.alignItems = 'center';
     div.style.gap = '10px';
     
-    const zoneName = t._type === 'collection' ? getZone(t.location) : '🏦 งานส่งธนาคาร';
+    const zoneName = t._type === 'collection' ? getZone(t.location) : '🏦 งานนำฝากเช็คเข้าธนาคาร';
     
     div.innerHTML = `
       <input type="checkbox" id="sel-${t.id}" value="${t.id}" data-type="${t._type}" style="width:20px; height:20px; cursor:pointer">
@@ -753,7 +753,7 @@ function generateSelectedItinerary() {
         ...task, 
         _type: type, 
         _label: type === 'collection' ? task.location : `🏦 ${task.bank}`,
-        _zone: type === 'collection' ? getZone(task.location) : '🏦 งานส่งธนาคาร'
+        _zone: type === 'collection' ? getZone(task.location) : '🏦 งานนำฝากเช็คเข้าธนาคาร'
       });
     }
   });
