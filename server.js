@@ -34,7 +34,8 @@ const initDb = async () => {
         contact_name TEXT,
         contact_phone TEXT,
         notes TEXT,
-        status TEXT
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS deposits (
         id TEXT PRIMARY KEY,
@@ -44,7 +45,8 @@ const initDb = async () => {
         check_count INTEGER,
         total_amount NUMERIC,
         notes TEXT,
-        status TEXT
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS locations (
         id SERIAL PRIMARY KEY,
@@ -60,6 +62,10 @@ const initDb = async () => {
         value TEXT
       );
     `);
+    
+    // Migrations: Add created_at if not exists
+    await client.query('ALTER TABLE collections ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    await client.query('ALTER TABLE deposits ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     
     // Seed default locations if empty
     const locCheck = await client.query('SELECT COUNT(*) FROM locations');
@@ -125,7 +131,7 @@ initDb();
 // COLLECTIONS
 app.get('/api/collections', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM collections ORDER BY date DESC');
+        const result = await pool.query('SELECT * FROM collections ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -136,11 +142,11 @@ app.post('/api/collections', async (req, res) => {
     const { id, date, location, checkCount, totalAmount, contactName, contactPhone, notes, status } = req.body;
     try {
         await pool.query(
-            `INSERT INTO collections (id, date, location, check_count, total_amount, contact_name, contact_phone, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `INSERT INTO collections (id, date, location, check_count, total_amount, contact_name, contact_phone, notes, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
        ON CONFLICT (id) DO UPDATE SET 
        date=$2, location=$3, check_count=$4, total_amount=$5, contact_name=$6, contact_phone=$7, notes=$8, status=$9`,
-            [id, date, location, checkCount, totalAmount, contactName, contactPhone, notes, status]
+            [id, date, location, checkCount || 0, totalAmount || 0, contactName || '', contactPhone || '', notes || '', status || 'pending']
         );
         res.json({ success: true });
     } catch (err) {
@@ -160,7 +166,7 @@ app.delete('/api/collections/:id', async (req, res) => {
 // DEPOSITS
 app.get('/api/deposits', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM deposits ORDER BY date DESC');
+        const result = await pool.query('SELECT * FROM deposits ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -171,11 +177,11 @@ app.post('/api/deposits', async (req, res) => {
     const { id, date, bank, branch, checkCount, totalAmount, notes, status } = req.body;
     try {
         await pool.query(
-            `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
        ON CONFLICT (id) DO UPDATE SET 
        date=$2, bank=$3, branch=$4, check_count=$5, total_amount=$6, notes=$7, status=$8`,
-            [id, date, bank, branch, checkCount, totalAmount, notes, status]
+            [id, date, bank, branch || '', checkCount || 0, totalAmount || 0, notes || '', status || 'pending']
         );
         res.json({ success: true });
     } catch (err) {
@@ -281,7 +287,6 @@ app.post('/api/import', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // Clear existing data (optional, but requested by user's "overwrite" logic)
     await client.query('DELETE FROM collections');
     await client.query('DELETE FROM deposits');
     await client.query('DELETE FROM locations');
@@ -291,18 +296,18 @@ app.post('/api/import', async (req, res) => {
     if (collections) {
       for (const c of collections) {
         await client.query(
-          `INSERT INTO collections (id, date, location, check_count, total_amount, contact_name, contact_phone, notes, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [c.id, c.date, c.location, c.checkCount, c.totalAmount, c.contactName, c.contactPhone, c.notes, c.status]
+          `INSERT INTO collections (id, date, location, check_count, total_amount, contact_name, contact_phone, notes, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [c.id, c.date, c.location, c.checkCount || 0, c.totalAmount || 0, c.contactName || '', c.contactPhone || '', c.notes || '', c.status || 'pending', c.createdAt || new Date().toISOString()]
         );
       }
     }
     if (deposits) {
       for (const d of deposits) {
         await client.query(
-          `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [d.id, d.date, d.bank, d.branch, d.checkCount, d.totalAmount, d.notes, d.status]
+          `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [d.id, d.date, d.bank, d.branch || '', d.checkCount || 0, d.totalAmount || 0, d.notes || '', d.status || 'pending', d.createdAt || new Date().toISOString()]
         );
       }
     }

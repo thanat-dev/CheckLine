@@ -37,10 +37,22 @@ async function loadAllData() {
     apiRequest('/settings')
   ]);
 
-  if (cols) _state.collections = cols;
-  if (deps) _state.deposits = deps;
+  if (cols) _state.collections = cols.map(c => ({
+    ...c,
+    checkCount: c.check_count,
+    totalAmount: parseFloat(c.total_amount || 0),
+    contactName: c.contact_name,
+    contactPhone: c.contact_phone,
+    createdAt: c.created_at
+  }));
+  if (deps) _state.deposits = deps.map(d => ({
+    ...d,
+    checkCount: d.check_count,
+    totalAmount: parseFloat(d.total_amount || 0),
+    createdAt: d.created_at
+  }));
   if (locs) _state.locations = locs;
-  if (banks) _state.banks = banks.map(b => b.name); // Server returns objects
+  if (banks) _state.banks = banks.map(b => typeof b === 'string' ? b : b.name);
   if (settings) _state.settings = settings;
 
   return _state;
@@ -426,7 +438,7 @@ function renderDashboard() {
 
   // Recent items
   const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 ฝากธนาคาร', _name: d.bank }))];
-  all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  all.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
   const recent = all.slice(0, 8);
 
   const tbody = document.getElementById('recent-table');
