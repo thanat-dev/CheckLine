@@ -146,8 +146,8 @@ const ZONE_MAP = {
   'กรมแพทย์ทหารอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
   'สถาบันเวชศาสตร์การบิน กองทัพอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
   'โรงพยาบาลทหารอากาศ (สีกัน)': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: '2: ดอนเมือง / สายไหม', order: 5 },
-  'สสน.นทพ.': { zone: '2: ดอนเมือง / สายไหม', order: 5 },
+  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
+  'สสน.นทพ.': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
 
   // 📍 Zone 6: ฝั่งธนบุรี
   'โรงพยาบาลสมเด็จพระปิ่นเกล้า': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6 },
@@ -434,7 +434,8 @@ function renderDashboard() {
   document.getElementById('stat-completed').textContent = completedThisMonth.length;
 
   const totalThisMonth = [...cols, ...deps].filter(i => i.date && i.date.startsWith(thisMonth)).reduce((s, i) => s + (i.totalAmount || 0), 0);
-  document.getElementById('stat-total-amount').textContent = fmt(totalThisMonth);
+  const totalEl = document.getElementById('stat-total-amount');
+  if (totalEl) totalEl.textContent = fmt(totalThisMonth);
 
   // Recent items
   const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 ฝากธนาคาร', _name: d.bank }))];
@@ -443,8 +444,9 @@ function renderDashboard() {
 
   const tbody = document.getElementById('recent-table');
   const empty = document.getElementById('recent-empty');
-  if (!recent.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
+  if (!tbody) return;
+  if (!recent.length) { tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
   tbody.innerHTML = recent.map(r => `<tr>
     <td>${fmtDate(r.date)}</td><td><strong>${r._name}</strong></td>
     <td>${statusBadge(r.status)}</td></tr>`).join('');
