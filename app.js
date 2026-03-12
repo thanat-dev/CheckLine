@@ -1,5 +1,5 @@
-// ==================== DATA LAYER (API) ====================
-const API_URL = window.location.origin; // Same origin as server
+const API_URL = window.location.origin;
+const KEYS = { collections: 'cl_collections', deposits: 'cl_deposits', locations: 'cl_locations', banks: 'cl_banks', settings: 'cl_settings' };
 
 // Global state cache to minimize redundant API calls
 let _state = {
@@ -209,7 +209,7 @@ function statusBadge(s) { const m = STATUS_MAP[s] || STATUS_MAP.pending; return 
 
 // ==================== TOAST ====================
 function toast(msg, type = 'success') {
-  const c = document.getElementById('toastContainer');
+  const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className = `toast toast-${type}`;
   t.textContent = msg;
