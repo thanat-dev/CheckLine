@@ -508,7 +508,14 @@ function renderBankTags() {
 
 // ==================== EXPORT / IMPORT ====================
 function exportData() {
-  const data = { collections: getData(KEYS.collections), deposits: getData(KEYS.deposits), locations: getData(KEYS.locations), banks: getData(KEYS.banks), settings: getSettings(), exportDate: new Date().toISOString() };
+  const data = {
+    cl_collections: getData('cl_collections'),
+    cl_deposits: getData('cl_deposits'),
+    cl_locations: getData('cl_locations'),
+    cl_banks: getData('cl_banks'),
+    cl_settings: getSettings(),
+    exportDate: new Date().toISOString()
+  };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -517,41 +524,68 @@ function exportData() {
   toast('Export ข้อมูลสำเร็จ');
 }
 
-function importData(e) {
+async function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
 
-  if (!confirm('⚠️ การนำเข้าข้อมูลจะเขียนทับข้อมูลปัจจุบันทั้งหมดในเครื่องนี้ ต้องการดำเนินการต่อหรือไม่?')) {
+  if (!confirm('⚠️ การนำเข้าข้อมูลจะเขียนทับข้อมูลในฐานข้อมูลด้วยไฟล์นี้ ต้องการดำเนินการต่อหรือไม่?')) {
     e.target.value = '';
     return;
   }
 
   const reader = new FileReader();
-  reader.onload = function (ev) {
+  reader.onload = async function (ev) {
     try {
-      const data = JSON.parse(ev.target.result);
+      const rawData = JSON.parse(ev.target.result);
 
-      // Ensure we have at least one valid key
-      if (!data.collections && !data.deposits && !data.locations && !data.banks && !data.settings) {
+      // Normalize data (handle both cl_ prefixed and legacy keys)
+      const data = {
+        collections: rawData.cl_collections || rawData.collections || [],
+        deposits: rawData.cl_deposits || rawData.deposits || [],
+        locations: rawData.cl_locations || rawData.locations || [],
+        banks: rawData.cl_banks || rawData.banks || [],
+        settings: rawData.cl_settings || rawData.settings || {}
+      };
+
+      if (!data.collections.length && !data.deposits.length && !data.locations.length && !data.banks.length && !Object.keys(data.settings).length) {
         throw new Error('Invalid format');
       }
 
-      if (data.collections) setData(KEYS.collections, data.collections);
-      if (data.deposits) setData(KEYS.deposits, data.deposits);
-      if (data.locations) setData(KEYS.locations, data.locations);
-      if (data.banks) setData(KEYS.banks, data.banks);
-      if (data.settings) saveSettings(data.settings);
+      toast('⌛ กำลังนำเข้าข้อมูล...', 'info');
 
-      toast('✅ นำเข้าข้อมูลสำเร็จแล้ว ระบบกำลังรีเฟรช...');
+      // Import Collections
+      for (const item of data.collections) {
+        await apiRequest('/collections', 'POST', item);
+      }
 
-      // Full refresh after a short delay to ensure everything is saved and re-rendered
-      setTimeout(() => {
-        location.reload();
-      }, 1500);
+      // Import Deposits
+      for (const item of data.deposits) {
+        await apiRequest('/deposits', 'POST', item);
+      }
+
+      // Import Locations
+      for (const loc of data.locations) {
+        await addLocationApi(loc);
+      }
+
+      // Import Banks
+      for (const bank of data.banks) {
+        // Handle both string array and object array forms
+        const bankName = typeof bank === 'string' ? bank : bank.name;
+        await addBankApi(bankName);
+      }
+
+      // Import Settings
+      if (Object.keys(data.settings).length) {
+        await saveSettingApi(data.settings);
+      }
+
+      toast('✅ นำเข้าข้อมูลสำเร็จแล้ว!');
+      await syncData();
 
     } catch (err) {
       console.error('Import error:', err);
-      toast('❌ ไฟล์ไม่ถูกต้อง หรือรูปแบบข้อมูลผิดพลาด', 'error');
+      toast('❌ รูปแบบไฟล์ไม่ถูกต้อง', 'error');
     }
   };
   reader.readAsText(file);
