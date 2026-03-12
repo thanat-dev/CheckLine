@@ -382,9 +382,21 @@ function renderDashboard() {
 
 // ==================== SETTINGS ====================
 function renderSettings() {
+  const settings = getSettings();
+  if (settings.gasUrl) document.getElementById('setting-gas-url').value = settings.gasUrl;
   renderLocationTags();
   renderBankTags();
 }
+
+// Auto-save GAS URL on change
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'setting-gas-url') {
+    const settings = getSettings();
+    settings.gasUrl = e.target.value.trim();
+    saveSettings(settings);
+    toast('บันทึกลิงก์สำรองข้อมูลแล้ว');
+  }
+});
 
 function addLocation() {
   const name = document.getElementById('new-location').value.trim();
@@ -464,6 +476,45 @@ function importData(e) {
   };
   reader.readAsText(file);
   e.target.value = '';
+}
+
+async function backupToDrive() {
+  const settings = getSettings();
+  if (!settings.gasUrl) {
+    toast('กรุณากรอก Google Apps Script URL ในหน้าตั้งค่าก่อนครับ', 'error');
+    showPage('settings');
+    return;
+  }
+
+  const data = {
+    collections: getData(KEYS.collections),
+    deposits: getData(KEYS.deposits),
+    locations: getData(KEYS.locations),
+    banks: getData(KEYS.banks),
+    settings: settings,
+    exportDate: new Date().toISOString(),
+    filename: `CheckLine_backup_${today()}.json`
+  };
+
+  toast('กำลังส่งข้อมูลไปยัง Google Drive...', 'info');
+
+  try {
+    // We use no-cors if the GAS isn't set up for CORS, but better to use a regular request
+    // Since GAS web apps handle redirects, we often need to handle that or use a simple POST
+    const response = await fetch(settings.gasUrl, {
+      method: 'POST',
+      mode: 'no-cors', // Basic GAS web apps often require no-cors for simple implementation
+      cache: 'no-cache',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    // With no-cors, we can't see the response body, but we can assume success if no error thrown
+    toast('✅ ส่งข้อมูลไปยัง Google Drive สำเร็จ! (โปรดตรวจสอบใน Drive ของคุณ)');
+  } catch (error) {
+    console.error('Backup Error:', error);
+    toast('❌ เกิดข้อผิดพลาดในการสำรองข้อมูล', 'error');
+  }
 }
 
 function clearAllData() {

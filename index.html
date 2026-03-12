@@ -203,8 +203,19 @@
       <div class="tags-container" id="banks-tags"></div>
     </div>
 
+    <div class="card" style="margin-bottom:20px">
+      <div class="section-title">☁️ Google Drive Backup</div>
+      <div class="form-group">
+        <label class="form-label">Google Apps Script Web App URL</label>
+        <input type="text" class="form-input" id="setting-gas-url"
+          placeholder="https://script.google.com/macros/s/.../exec">
+        <p class="setting-desc" style="margin-top:4px">นำลิงก์จาก Google Apps Script มาวางที่นี่เพื่อสำรองข้อมูล</p>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="backupToDrive()">📤 Backup to Google Drive</button>
+    </div>
+
     <div class="card">
-      <div class="section-title">💾 สำรองข้อมูล</div>
+      <div class="section-title">💾 สำรองข้อมูล (Local)</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="exportData()">📤 Export ข้อมูล (JSON)</button>
         <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📥 Import ข้อมูล</button>
