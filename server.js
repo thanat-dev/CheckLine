@@ -13,6 +13,12 @@ app.use(bodyParser.json());
 app.use(express.static('./')); // Serve frontend files
 
 // Database Connection
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL is not defined in environment variables!');
+} else {
+    console.log('✅ DATABASE_URL is detected');
+}
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -22,8 +28,11 @@ const pool = new Pool({
 
 // Initialize Database Tables
 const initDb = async () => {
-    const client = await pool.connect();
+    console.log('🔄 Attempting to connect to database...');
+    let client;
     try {
+        client = await pool.connect();
+        console.log('📡 Connected to database, initializing tables...');
         await client.query(`
       CREATE TABLE IF NOT EXISTS collections (
         id TEXT PRIMARY KEY,
