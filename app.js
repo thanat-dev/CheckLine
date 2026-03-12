@@ -689,33 +689,43 @@ function getZoneOrderByTitle(title) {
 }
 
 function openItinerarySelector() {
-  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
-  if (tasks.length === 0) {
-    toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
+  const colTasks = getData(KEYS.collections).filter(t => t.status === 'pending');
+  const depTasks = getData(KEYS.deposits).filter(t => t.status === 'pending');
+  
+  const allTasks = [
+    ...colTasks.map(t => ({ ...t, _type: 'collection', _label: t.location })),
+    ...depTasks.map(t => ({ ...t, _type: 'deposit', _label: `🏦 ${t.bank}` }))
+  ];
+
+  if (allTasks.length === 0) {
+    toast('ไม่มีงานรับเช็คหรือฝากธนาคารที่ค้างอยู่', 'info');
     return;
   }
 
   // Sort tasks by zone before showing
-  tasks.sort((a, b) => {
-    const za = getZoneData(a.location);
-    const zb = getZoneData(b.location);
+  allTasks.sort((a, b) => {
+    const za = a._type === 'collection' ? getZoneData(a.location) : { order: 90 }; // Banks usually after collections
+    const zb = b._type === 'collection' ? getZoneData(b.location) : { order: 90 };
     return za.order - zb.order;
   });
 
   const container = document.getElementById('selector-list');
   container.innerHTML = '';
 
-  tasks.forEach(t => {
+  allTasks.forEach(t => {
     const div = document.createElement('div');
     div.style.marginBottom = '12px';
     div.style.display = 'flex';
     div.style.alignItems = 'center';
     div.style.gap = '10px';
+    
+    const zoneName = t._type === 'collection' ? getZone(t.location) : '🏦 งานส่งธนาคาร';
+    
     div.innerHTML = `
-      <input type="checkbox" id="sel-${t.id}" value="${t.id}" style="width:20px; height:20px; cursor:pointer">
+      <input type="checkbox" id="sel-${t.id}" value="${t.id}" data-type="${t._type}" style="width:20px; height:20px; cursor:pointer">
       <label for="sel-${t.id}" style="cursor:pointer; flex:1">
-        <div style="font-weight:500">${t.location}</div>
-        <div style="font-size:0.75rem; color:var(--text-dim)">${getZone(t.location)}</div>
+        <div style="font-weight:500">${t._label}</div>
+        <div style="font-size:0.75rem; color:var(--text-dim)">${zoneName}</div>
       </label>
     `;
     container.appendChild(div);
@@ -726,20 +736,32 @@ function openItinerarySelector() {
 
 function generateSelectedItinerary() {
   const container = document.getElementById('selector-list');
-  const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-
-  if (checked.length === 0) {
-    toast('กรุณาเลือกสถานที่อย่างน้อย 1 แห่ง', 'warning');
+  const checkedNodes = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+  
+  if (checkedNodes.length === 0) {
+    toast('กรุณาเลือกรายการอย่างน้อย 1 แห่ง', 'warning');
     return;
   }
 
-  const allTasks = getData(KEYS.collections);
-  const selectedTasks = allTasks.filter(t => checked.includes(t.id.toString()));
+  const selectedTasks = [];
+  checkedNodes.forEach(node => {
+    const id = node.value;
+    const type = node.getAttribute('data-type');
+    const task = getData(type === 'collection' ? 'cl_collections' : 'cl_deposits').find(t => t.id.toString() === id.toString());
+    if (task) {
+      selectedTasks.push({ 
+        ...task, 
+        _type: type, 
+        _label: type === 'collection' ? task.location : `🏦 ${task.bank}`,
+        _zone: type === 'collection' ? getZone(task.location) : '🏦 งานส่งธนาคาร'
+      });
+    }
+  });
 
   // Sort selected tasks by zone
   selectedTasks.sort((a, b) => {
-    const za = getZoneData(a.location);
-    const zb = getZoneData(b.location);
+    const za = a._type === 'collection' ? getZoneData(a.location) : { order: 90 };
+    const zb = b._type === 'collection' ? getZoneData(b.location) : { order: 90 };
     return za.order - zb.order;
   });
 
@@ -747,23 +769,25 @@ function generateSelectedItinerary() {
 
   const groups = {};
   selectedTasks.forEach(t => {
-    const z = getZone(t.location);
+    const z = t._zone;
     if (!groups[z]) groups[z] = [];
     groups[z].push(t);
   });
 
   const sortedZones = Object.keys(groups).sort((a, b) => {
+    if (a.includes('ธนาคาร')) return 1;
+    if (b.includes('ธนาคาร')) return -1;
     return getZoneOrderByTitle(a) - getZoneOrderByTitle(b);
   });
 
   sortedZones.forEach(z => {
     msg += `\n\n📍 ${z}`;
     groups[z].forEach((t, idx) => {
-      msg += `\n${idx + 1}. ${t.location}`;
+      msg += `\n${idx + 1}. ${t._label}`;
     });
   });
 
-  msg += `\n━━━━━━━━━━━━━━━\nจำนวนสถานที่วันนี้: ${selectedTasks.length} แห่ง`;
+  msg += `\n━━━━━━━━━━━━━━━\nจำนวนสถานที่รวม: ${selectedTasks.length} แห่ง`;
 
   closeModal('itinerary-selector');
   showCopyModal(msg);
