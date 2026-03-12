@@ -301,8 +301,7 @@ function renderCollections() {
   if (!cols.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = cols.map(c => `<tr>
-    <td>${fmtDate(c.date)}</td><td><strong>${c.location}</strong></td><td>${LOC_TYPE_MAP[c.locationType] || ''}</td>
-    <td>${c.checkCount} ฉบับ</td><td>${fmt(c.totalAmount)}</td><td>${c.contactName || '-'}</td>
+    <td>${fmtDate(c.date)}</td><td><strong>${c.location}</strong></td>
     <td>${statusBadge(c.status)}</td>
     <td><div class="action-btns">
       <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
@@ -365,7 +364,6 @@ function renderDeposits() {
   empty.style.display = 'none';
   tbody.innerHTML = deps.map(d => `<tr>
     <td>${fmtDate(d.date)}</td><td><strong>${d.bank}</strong></td><td>${d.branch || '-'}</td>
-    <td>${d.checkCount} ฉบับ</td><td>${fmt(d.totalAmount)}</td>
     <td>${statusBadge(d.status)}</td>
     <td><div class="action-btns">
       <button class="btn btn-ghost btn-sm" onclick="editDeposit('${d.id}')">✏️</button>
@@ -436,8 +434,8 @@ function renderDashboard() {
   if (!recent.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = recent.map(r => `<tr>
-    <td>${fmtDate(r.date)}</td><td>${r._type}</td><td><strong>${r._name}</strong></td>
-    <td>${r.checkCount} ฉบับ</td><td>${fmt(r.totalAmount)}</td><td>${statusBadge(r.status)}</td></tr>`).join('');
+    <td>${fmtDate(r.date)}</td><td><strong>${r._name}</strong></td>
+    <td>${statusBadge(r.status)}</td></tr>`).join('');
 }
 
 // ==================== SETTINGS ====================
