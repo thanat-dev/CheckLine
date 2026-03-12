@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CheckLine - แอพบันทึกการเดินทางรับเช็ค พร้อมแจ้งเตือน LINE">
+  <title>CheckLine - บันทึกงานรับเช็ค</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-brand">📋 CheckLine</div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="showPage('dashboard')" id="nav-dashboard">🏠 หน้าหลัก</button>
+      <button class="nav-link" onclick="showPage('collection')" id="nav-collection">📍 รับเช็ค</button>
+      <button class="nav-link" onclick="showPage('deposit')" id="nav-deposit">🏦 ฝากธนาคาร</button>
+      <button class="nav-link" onclick="showPage('settings')" id="nav-settings">⚙️ ตั้งค่า</button>
+    </div>
+  </nav>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="main page" id="page-dashboard">
+    <h1 class="section-title" style="font-size:1.5rem;margin-bottom:24px">🏠 Dashboard</h1>
+
+    <div class="stats-grid">
+      <div class="card stat-card">
+        <div class="stat-icon">📍</div>
+        <div class="stat-value" id="stat-pending-col">0</div>
+        <div class="stat-label">งานรับเช็ครอดำเนินการ</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon">🏦</div>
+        <div class="stat-value" id="stat-pending-dep">0</div>
+        <div class="stat-label">งานฝากธนาคารรอดำเนินการ</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="stat-completed">0</div>
+        <div class="stat-label">เสร็จสิ้นเดือนนี้</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="stat-total-amount">0</div>
+        <div class="stat-label">ยอดรวมเดือนนี้ (บาท)</div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="btn btn-primary btn-lg" onclick="openModal('collection')">📍 + เพิ่มงานรับเช็ค</button>
+      <button class="btn btn-primary btn-lg" onclick="openModal('deposit')">🏦 + เพิ่มงานฝากธนาคาร</button>
+      <button class="btn btn-warning btn-lg" onclick="sendDailySummary()">📊 สรุปรายงาน (คัดลอก)</button>
+      <button class="btn btn-info btn-lg" onclick="generateItinerary()"
+        style="background:#0ea5e9; color:#fff; border:none">🗺️ แผนเดินทาง (จัดโซน)</button>
+      <button class="btn btn-lg" onclick="checkIn()" style="background:#22c55e; color:#fff; border:none">📍 เช็คอิน
+        (แชร์ตำแหน่ง)</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="section-title">📋 งานล่าสุด</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>ประเภท</th>
+              <th>สถานที่/ธนาคาร</th>
+              <th>จำนวน</th>
+              <th>ยอด</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="recent-table"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="recent-empty" style="display:none">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">ยังไม่มีรายการ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COLLECTION PAGE ============ -->
+  <div class="main page" id="page-collection" style="display:none">
+    <div
+      style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <h1 class="section-title" style="margin:0">📍 งานรับเช็คตามสถานที่</h1>
+      <button class="btn btn-primary" onclick="openModal('collection')">+ เพิ่มงาน</button>
+    </div>
+    <div class="filter-bar">
+      <input type="date" class="form-input" id="filter-col-date" onchange="renderCollections()">
+      <select class="form-select" id="filter-col-status" onchange="renderCollections()">
+        <option value="">ทุกสถานะ</option>
+        <option value="pending">⏳ รอไปรับ</option>
+        <option value="traveling">🚗 กำลังเดินทาง</option>
+        <option value="completed">✅ รับแล้ว</option>
+        <option value="cancelled">❌ ยกเลิก</option>
+      </select>
+      <input type="text" class="form-input" placeholder="🔍 ค้นหา..." id="filter-col-search"
+        oninput="renderCollections()">
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>สถานที่</th>
+              <th>ประเภท</th>
+              <th>จำนวน</th>
+              <th>ยอดรวม</th>
+              <th>ผู้ติดต่อ</th>
+              <th>สถานะ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="collection-table"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="collection-empty" style="display:none">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">ยังไม่มีงานรับเช็ค</div><button class="btn btn-primary"
+          onclick="openModal('collection')">+ เพิ่มงานแรก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DEPOSIT PAGE ============ -->
+  <div class="main page" id="page-deposit" style="display:none">
+    <div
+      style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <h1 class="section-title" style="margin:0">🏦 งานนำเช็คฝากธนาคาร</h1>
+      <button class="btn btn-primary" onclick="openModal('deposit')">+ เพิ่มงาน</button>
+    </div>
+    <div class="filter-bar">
+      <input type="date" class="form-input" id="filter-dep-date" onchange="renderDeposits()">
+      <select class="form-select" id="filter-dep-status" onchange="renderDeposits()">
+        <option value="">ทุกสถานะ</option>
+        <option value="pending">⏳ รอนำฝาก</option>
+        <option value="completed">✅ ฝากแล้ว</option>
+        <option value="cancelled">❌ ยกเลิก</option>
+      </select>
+      <input type="text" class="form-input" placeholder="🔍 ค้นหา..." id="filter-dep-search" oninput="renderDeposits()">
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>ธนาคาร</th>
+              <th>สาขา</th>
+              <th>จำนวน</th>
+              <th>ยอดรวม</th>
+              <th>สถานะ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="deposit-table"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="deposit-empty" style="display:none">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">ยังไม่มีงานฝากธนาคาร</div><button class="btn btn-primary"
+          onclick="openModal('deposit')">+ เพิ่มงานแรก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS PAGE ============ -->
+  <div class="main page" id="page-settings" style="display:none">
+    <h1 class="section-title" style="font-size:1.5rem;margin-bottom:24px">⚙️ ตั้งค่า</h1>
+
+
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="section-title">📍 จัดการสถานที่</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" class="form-input" id="new-location" placeholder="เพิ่มสถานที่ใหม่...">
+        <select class="form-select" id="new-location-type" style="width:auto">
+          <option value="hospital">🏥 โรงพยาบาล</option>
+          <option value="government">🏛️ สถานที่ราชการ</option>
+          <option value="private">🏢 บริษัทเอกชน</option>
+          <option value="other">📌 อื่นๆ</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="addLocation()">+ เพิ่ม</button>
+      </div>
+      <div class="tags-container" id="locations-tags"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="section-title">🏦 จัดการธนาคาร</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" class="form-input" id="new-bank" placeholder="เพิ่มธนาคารใหม่...">
+        <button class="btn btn-primary btn-sm" onclick="addBank()">+ เพิ่ม</button>
+      </div>
+      <div class="tags-container" id="banks-tags"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">💾 สำรองข้อมูล</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="exportData()">📤 Export ข้อมูล (JSON)</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📥 Import ข้อมูล</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn btn-danger" onclick="clearAllData()">🗑️ ลบข้อมูลทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COLLECTION MODAL ============ -->
+  <div class="modal-overlay" id="modal-collection">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-col-title">📍 เลือกสถานที่รับเช็ค</div>
+        <button class="modal-close" onclick="closeModal('collection')">&times;</button>
+      </div>
+      <form onsubmit="saveCollection(event)">
+        <input type="hidden" id="col-edit-id">
+        <div class="form-group"><label class="form-label">สถานที่ใหม่ หรือจากรายการ</label>
+          <input type="text" class="form-input" id="col-location" list="location-list" required
+            placeholder="ระบบจะบันทึกเป็นงานของวันนี้อัตโนมัติ">
+          <datalist id="location-list"></datalist>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">💾 บันทึก</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ DEPOSIT MODAL ============ -->
+  <div class="modal-overlay" id="modal-deposit">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-dep-title">🏦 เพิ่มงานฝากธนาคาร</div>
+        <button class="modal-close" onclick="closeModal('deposit')">&times;</button>
+      </div>
+      <form onsubmit="saveDeposit(event)">
+        <input type="hidden" id="dep-edit-id">
+        <div class="form-group"><label class="form-label">ธนาคารใหม่ หรือจากรายการ</label>
+          <input type="text" class="form-input" id="dep-bank" list="bank-list" required
+            placeholder="พิมพ์หรือเลือกธนาคาร">
+          <datalist id="bank-list"></datalist>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">💾 บันทึก</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ COPY MODAL ============ -->
+  <div class="modal-overlay" id="modal-copy">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📋 คัดลอกข้อความ</div>
+        <button class="modal-close" onclick="closeModal('copy')">&times;</button>
+      </div>
+      <div class="form-group">
+        <textarea class="form-textarea" id="copy-text"
+          style="height:280px; font-family:inherit; font-size:14px; line-height:1.5; background:var(--bg-primary)"
+          readonly></textarea>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" onclick="copyToClipboard()">📋 คัดลอกไปวาง (Copy)</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
