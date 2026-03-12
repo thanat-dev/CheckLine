@@ -248,11 +248,11 @@ async function copyToClipboard() {
 // ==================== DATALISTS ====================
 function updateLocationDatalist() {
   const dl = document.getElementById('location-list');
-  dl.innerHTML = getData(KEYS.locations).map(l => `<option value="${l.name}">`).join('');
+  dl.innerHTML = getData('cl_locations').map(l => `<option value="${l.name}">`).join('');
 }
 function updateBankDatalist() {
   const dl = document.getElementById('bank-list');
-  dl.innerHTML = getData(KEYS.banks).map(b => `<option value="${b}">`).join('');
+  dl.innerHTML = getData('cl_banks').map(b => `<option value="${b}">`).join('');
 }
 
 // ==================== COLLECTION CRUD ====================
@@ -312,7 +312,7 @@ function renderCollections() {
 }
 
 function editCollection(id) {
-  const c = getData(KEYS.collections).find(x => x.id === id);
+  const c = getData('cl_collections').find(x => x.id === id);
   if (!c) return;
   document.getElementById('col-edit-id').value = c.id;
   document.getElementById('col-location').value = c.location;
@@ -351,7 +351,7 @@ async function saveDeposit(e) {
 }
 
 function renderDeposits() {
-  let deps = getData(KEYS.deposits);
+  let deps = getData('cl_deposits');
   const dateF = document.getElementById('filter-dep-date').value;
   const statusF = document.getElementById('filter-dep-status').value;
   const searchF = document.getElementById('filter-dep-search').value.toLowerCase();
@@ -375,7 +375,7 @@ function renderDeposits() {
 }
 
 function editDeposit(id) {
-  const d = getData(KEYS.deposits).find(x => x.id === id);
+  const d = getData('cl_deposits').find(x => x.id === id);
   if (!d) return;
   document.getElementById('dep-edit-id').value = d.id;
   document.getElementById('dep-bank').value = d.bank;
@@ -412,8 +412,8 @@ async function deleteItem(id, type) {
 
 // ==================== DASHBOARD ====================
 function renderDashboard() {
-  const cols = getData(KEYS.collections);
-  const deps = getData(KEYS.deposits);
+  const cols = getData('cl_collections');
+  const deps = getData('cl_deposits');
   const now = new Date();
   const thisMonth = now.toISOString().slice(0, 7);
 
@@ -428,7 +428,7 @@ function renderDashboard() {
 
   // Recent items
   const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 ฝากธนาคาร', _name: d.bank }))];
-  all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  all.sort((a, b) => (b.id.includes('_') ? parseInt(b.id.split('_')[1]) : 0) - (a.id.includes('_') ? parseInt(a.id.split('_')[1]) : 0));
   const recent = all.slice(0, 8);
 
   const tbody = document.getElementById('recent-table');
@@ -612,11 +612,11 @@ async function backupToDrive() {
   }
 
   const data = {
-    collections: getData(KEYS.collections),
-    deposits: getData(KEYS.deposits),
-    locations: getData(KEYS.locations),
-    banks: getData(KEYS.banks),
-    settings: settings,
+    cl_collections: getData('cl_collections'),
+    cl_deposits: getData('cl_deposits'),
+    cl_locations: getData('cl_locations'),
+    cl_banks: getData('cl_banks'),
+    cl_settings: settings,
     exportDate: new Date().toISOString(),
     filename: `CheckLine_backup_${today()}.json`
   };
@@ -644,7 +644,9 @@ async function backupToDrive() {
 
 function clearAllData() {
   if (!confirm('⚠️ ต้องการลบข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
-  Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+  // This should ideally call a "Clear All" API if needed, but for now we reset state
+  _state.collections = [];
+  _state.deposits = [];
   initDefaults();
   toast('ลบข้อมูลทั้งหมดสำเร็จ');
   renderDashboard(); renderSettings();
@@ -667,8 +669,8 @@ function sendDepositNotify(item, isUpdate = false) {
 
 function sendDailySummary() {
   const todayStr = document.getElementById('filter-col-date')?.value || today();
-  const cols = getData(KEYS.collections).filter(c => c.date === todayStr);
-  const deps = getData(KEYS.deposits).filter(d => d.date === todayStr);
+  const cols = getData('cl_collections').filter(c => c.date === todayStr);
+  const deps = getData('cl_deposits').filter(d => d.date === todayStr);
   if (!cols.length && !deps.length) { toast('ไม่มีงานวันนี้', 'info'); return; }
 
   let msg = `📊 สรุปรายงานงานวันที่ ${fmtDate(todayStr)}\n━━━━━━━━━━━━━━━`;
@@ -686,7 +688,7 @@ function sendDailySummary() {
 }
 
 function generateItinerary() {
-  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
+  const tasks = getData('cl_collections').filter(t => t.status === 'pending');
   if (tasks.length === 0) {
     toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
     return;
@@ -731,7 +733,7 @@ function getZoneOrderByTitle(title) {
 }
 
 function openItinerarySelector() {
-  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
+  const tasks = getData('cl_collections').filter(t => t.status === 'pending');
   if (tasks.length === 0) {
     toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
     return;
@@ -775,7 +777,7 @@ function generateSelectedItinerary() {
     return;
   }
 
-  const allTasks = getData(KEYS.collections);
+  const allTasks = getData('cl_collections');
   const selectedTasks = allTasks.filter(t => checked.includes(t.id.toString()));
 
   // Sort selected tasks by zone

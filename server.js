@@ -87,6 +87,7 @@ app.get('/api/collections', async (req, res) => {
         const result = await pool.query('SELECT * FROM collections ORDER BY date DESC');
         res.json(result.rows);
     } catch (err) {
+        console.error('API Error (/api/collections GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -103,6 +104,7 @@ app.post('/api/collections', async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
+        console.error('API Error (/api/collections POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -122,6 +124,7 @@ app.get('/api/deposits', async (req, res) => {
         const result = await pool.query('SELECT * FROM deposits ORDER BY date DESC');
         res.json(result.rows);
     } catch (err) {
+        console.error('API Error (/api/deposits GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -138,6 +141,7 @@ app.post('/api/deposits', async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
+        console.error('API Error (/api/deposits POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -157,6 +161,7 @@ app.get('/api/locations', async (req, res) => {
         const result = await pool.query('SELECT * FROM locations ORDER BY name');
         res.json(result.rows);
     } catch (err) {
+        console.error('API Error (/api/locations GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -167,6 +172,7 @@ app.post('/api/locations', async (req, res) => {
         await pool.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET zone=$2', [name, zone]);
         res.json({ success: true });
     } catch (err) {
+        console.error('API Error (/api/locations POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -186,6 +192,7 @@ app.get('/api/banks', async (req, res) => {
         const result = await pool.query('SELECT * FROM banks ORDER BY name');
         res.json(result.rows);
     } catch (err) {
+        console.error('API Error (/api/banks GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -196,6 +203,7 @@ app.post('/api/banks', async (req, res) => {
         await pool.query('INSERT INTO banks (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
         res.json({ success: true });
     } catch (err) {
+        console.error('API Error (/api/banks POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -217,6 +225,7 @@ app.get('/api/settings', async (req, res) => {
         result.rows.forEach(row => settings[row.key] = row.value);
         res.json(settings);
     } catch (err) {
+        console.error('API Error (/api/settings GET):', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -229,6 +238,7 @@ app.post('/api/settings', async (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
+        console.error('API Error (/api/settings POST):', err);
         res.status(500).json({ error: err.message });
     }
 });
