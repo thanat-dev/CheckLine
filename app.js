@@ -765,7 +765,7 @@ function generateSelectedItinerary() {
     return za.order - zb.order;
   });
 
-  let msg = `🗺️ แผนกำหนดการที่มีในมือ มีดังนี้\n📍 ต้นทาง: โรงงานเภสัชกรรมทหาร\n━━━━━━━━━━━━━━━`;
+  let msg = `📅 วันที่: ${fmtDate(today())}\n🗺️ แผนกำหนดการที่มีในมือ มีดังนี้\n📍 ต้นทาง: โรงงานเภสัชกรรมทหาร\n━━━━━━━━━━━━━━━`;
 
   const groups = {};
   selectedTasks.forEach(t => {
