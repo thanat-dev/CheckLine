@@ -1,13 +1,107 @@
-// ==================== DATA LAYER ====================
-const KEYS = { collections: 'cl_collections', deposits: 'cl_deposits', locations: 'cl_locations', banks: 'cl_banks', settings: 'cl_settings' };
+// ==================== DATA LAYER (API) ====================
+const API_URL = window.location.origin; // Same origin as server
 
-function getData(key) { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } }
-function setData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
-function getSettings() { try { return JSON.parse(localStorage.getItem(KEYS.settings)) || {}; } catch { return {}; } }
-function saveSettings(s) { localStorage.setItem(KEYS.settings, JSON.stringify(s)); }
+// Global state cache to minimize redundant API calls
+let _state = {
+  collections: [],
+  deposits: [],
+  locations: [],
+  banks: [],
+  settings: {}
+};
+
+async function apiRequest(endpoint, method = 'GET', data = null) {
+  try {
+    const options = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (data) options.body = JSON.stringify(data);
+
+    const response = await fetch(`${API_URL}/api${endpoint}`, options);
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    return await response.json();
+  } catch (err) {
+    console.error('API Request failed:', err);
+    // Fallback to local cache if offline (optional: implement better offline support)
+    return null;
+  }
+}
+
+async function loadAllData() {
+  const [cols, deps, locs, banks, settings] = await Promise.all([
+    apiRequest('/collections'),
+    apiRequest('/deposits'),
+    apiRequest('/locations'),
+    apiRequest('/banks'),
+    apiRequest('/settings')
+  ]);
+
+  if (cols) _state.collections = cols;
+  if (deps) _state.deposits = deps;
+  if (locs) _state.locations = locs;
+  if (banks) _state.banks = banks.map(b => b.name); // Server returns objects
+  if (settings) _state.settings = settings;
+
+  return _state;
+}
+
+// Wrapper functions to maintain compatibility with existing code (but now async)
+async function syncData() {
+  await loadAllData();
+  renderDashboard();
+  renderCollections();
+  renderDeposits();
+  renderSettings();
+}
+
+function getData(key) {
+  const map = { cl_collections: 'collections', cl_deposits: 'deposits', cl_locations: 'locations', cl_banks: 'banks' };
+  return _state[map[key]] || [];
+}
+
+function getSettings() { return _state.settings || {}; }
+
+async function saveItem(type, item) {
+  const endpoint = type === 'collection' ? '/collections' : '/deposits';
+  await apiRequest(endpoint, 'POST', item);
+  await loadAllData();
+}
+
+async function deleteItemApi(id, type) {
+  const endpoint = type === 'collection' ? `/collections/${id}` : `/deposits/${id}`;
+  await apiRequest(endpoint, 'DELETE');
+  await loadAllData();
+}
+
+async function saveSettingApi(settings) {
+  await apiRequest('/settings', 'POST', settings);
+  await loadAllData();
+}
+
+async function addLocationApi(loc) {
+  await apiRequest('/locations', 'POST', loc);
+  await loadAllData();
+}
+
+async function removeLocationApi(name) {
+  await apiRequest(`/locations/${encodeURIComponent(name)}`, 'DELETE');
+  await loadAllData();
+}
+
+async function addBankApi(name) {
+  await apiRequest('/banks', 'POST', { name });
+  await loadAllData();
+}
+
+async function removeBankApi(name) {
+  await apiRequest(`/banks/${encodeURIComponent(name)}`, 'DELETE');
+  await loadAllData();
+}
 
 // Default data
 const ZONE_MAP = {
+  // ... (keeping ZONE_MAP as is for frontend sorting/zoning logic)
   // 📍 Zone 1: พญาไท / อนุสาวรีย์ชัยสมรภูมิ / พระราม 6 (ใกล้ต้นทางที่สุด)
   'โรงพยาบาลพระมงกุฎเกล้า': { zone: '1: พญาไท / พระราม 6', order: 1 },
   'สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า': { zone: '1: พญาไท / พระราม 6', order: 1 },
@@ -65,17 +159,25 @@ function getZone(locationName) {
   return getZoneData(locationName).zone;
 }
 
-function initDefaults() {
-  if (!localStorage.getItem(KEYS.locations)) {
+async function initDefaults() {
+  await loadAllData();
+  const locs = getData('cl_locations');
+  if (locs.length === 0) {
     const defaultLocs = Object.keys(ZONE_MAP).map(name => ({
-      name, type: name.includes('บริษัท') ? 'private' : (name.includes('โรงพยาบาล') || name.includes('แพทย์') || name.includes('เภสัช')) ? 'hospital' : 'government'
+      name, zone: getZone(name)
     }));
-    defaultLocs.push({ name: 'สนง.สรรพากร', type: 'government' }, { name: 'สนง.ประกันสังคม', type: 'government' });
-    setData(KEYS.locations, defaultLocs);
+    for (const loc of defaultLocs) {
+      await addLocationApi(loc);
+    }
   }
-  if (!localStorage.getItem(KEYS.banks)) {
-    setData(KEYS.banks, ['กรุงไทย', 'กรุงเทพ', 'ไทยพาณิชย์', 'กสิกรไทย', 'ออมสิน', 'ธ.ก.ส.']);
+  const bankList = getData('cl_banks');
+  if (bankList.length === 0) {
+    const defaultBanks = ['กรุงไทย', 'กรุงเทพ', 'ไทยพาณิชย์', 'กสิกรไทย', 'ออมสิน', 'ธ.ก.ส.'];
+    for (const b of defaultBanks) {
+      await addBankApi(b);
+    }
   }
+  await syncData();
 }
 
 // ==================== PAGE NAVIGATION ====================
@@ -154,57 +256,35 @@ function updateBankDatalist() {
 }
 
 // ==================== COLLECTION CRUD ====================
-function saveCollection(e) {
+async function saveCollection(e) {
   e.preventDefault();
-  const cols = getData(KEYS.collections);
   const editId = document.getElementById('col-edit-id').value;
-
   const locationName = document.getElementById('col-location').value;
-  let locType = 'other';
-  if (locationName.includes('บริษัท')) locType = 'private';
-  else if (locationName.includes('โรงพยาบาล') || locationName.includes('แพทย์') || locationName.includes('เภสัช')) locType = 'hospital';
-  else locType = 'government';
 
   const item = {
     id: editId || 'col_' + Date.now(),
-    type: 'collection',
     date: today(),
     location: locationName,
-    locationType: locType,
     checkCount: 0,
     totalAmount: 0,
     contactName: '',
     contactPhone: '',
     notes: '',
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    status: 'pending'
   };
 
   if (editId) {
-    const idx = cols.findIndex(c => c.id === editId);
-    if (idx >= 0) {
-      item.status = cols[idx].status;
-      item.createdAt = cols[idx].createdAt;
-      item.date = cols[idx].date;
-      item.checkCount = cols[idx].checkCount;
-      item.totalAmount = cols[idx].totalAmount;
-      item.contactName = cols[idx].contactName;
-      item.contactPhone = cols[idx].contactPhone;
-      item.notes = cols[idx].notes;
-      cols[idx] = item;
-    }
-  } else { cols.unshift(item); }
+    const existing = getData('cl_collections').find(c => c.id === editId);
+    if (existing) Object.assign(item, existing, { location: locationName });
+  }
 
-  setData(KEYS.collections, cols);
-  // Auto-save location
-  const locs = getData(KEYS.locations);
-  if (!locs.find(l => l.name === item.location)) { locs.push({ name: item.location, type: locType }); setData(KEYS.locations, locs); }
+  await saveItem('collection', item);
+  await addLocationApi({ name: item.location, zone: getZone(item.location) });
 
   closeModal('collection');
   e.target.reset();
   toast(editId ? 'แก้ไขสถานที่รับเช็คสำเร็จ' : 'เพิ่มสถานที่รับเช็คสำเร็จ');
-  renderCollections(); renderDashboard();
+  await syncData();
 }
 
 function renderCollections() {
@@ -242,46 +322,32 @@ function editCollection(id) {
 }
 
 // ==================== DEPOSIT CRUD ====================
-function saveDeposit(e) {
+async function saveDeposit(e) {
   e.preventDefault();
-  const deps = getData(KEYS.deposits);
   const editId = document.getElementById('dep-edit-id').value;
   const item = {
     id: editId || 'dep_' + Date.now(),
-    type: 'deposit',
     date: today(),
     bank: document.getElementById('dep-bank').value,
     branch: '',
     checkCount: 0,
     totalAmount: 0,
     notes: '',
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    status: 'pending'
   };
 
   if (editId) {
-    const idx = deps.findIndex(d => d.id === editId);
-    if (idx >= 0) {
-      item.status = deps[idx].status;
-      item.createdAt = deps[idx].createdAt;
-      item.date = deps[idx].date;
-      item.branch = deps[idx].branch;
-      item.checkCount = deps[idx].checkCount;
-      item.totalAmount = deps[idx].totalAmount;
-      item.notes = deps[idx].notes;
-      deps[idx] = item;
-    }
-  } else { deps.unshift(item); }
+    const existing = getData('cl_deposits').find(d => d.id === editId);
+    if (existing) Object.assign(item, existing, { bank: item.bank });
+  }
 
-  setData(KEYS.deposits, deps);
-  const banks = getData(KEYS.banks);
-  if (!banks.includes(item.bank)) { banks.push(item.bank); setData(KEYS.banks, banks); }
+  await saveItem('deposit', item);
+  await addBankApi(item.bank);
 
   closeModal('deposit');
   e.target.reset();
   toast(editId ? 'แก้ไขงานฝากธนาคารสำเร็จ' : 'เพิ่มงานฝากธนาคารสำเร็จ');
-  renderDeposits(); renderDashboard();
+  await syncData();
 }
 
 function renderDeposits() {
@@ -319,35 +385,29 @@ function editDeposit(id) {
 }
 
 // ==================== SHARED ACTIONS ====================
-function cycleStatus(id, type) {
-  const key = type === 'collection' ? KEYS.collections : KEYS.deposits;
-  const items = getData(key);
+async function cycleStatus(id, type) {
+  const items = getData(type === 'collection' ? 'cl_collections' : 'cl_deposits');
   const item = items.find(i => i.id === id);
   if (!item) return;
   const states = type === 'collection' ? ['pending', 'traveling', 'completed', 'cancelled'] : ['pending', 'completed', 'cancelled'];
   const idx = states.indexOf(item.status);
   item.status = states[(idx + 1) % states.length];
-  item.updatedAt = new Date().toISOString();
-  setData(key, items);
-  toast(`สถานะเปลี่ยนเป็น: ${STATUS_MAP[item.status].label}`);
-  if (type === 'collection') renderCollections(); else renderDeposits();
-  renderDashboard();
 
-  // Send LINE notification on status change
+  await saveItem(type, item);
+  toast(`สถานะเปลี่ยนเป็น: ${STATUS_MAP[item.status].label}`);
+  await syncData();
+
   if (item.status === 'completed' || item.status === 'traveling') {
     if (type === 'collection') sendCollectionNotify(item, true);
     else sendDepositNotify(item, true);
   }
 }
 
-function deleteItem(id, type) {
+async function deleteItem(id, type) {
   if (!confirm('ต้องการลบรายการนี้?')) return;
-  const key = type === 'collection' ? KEYS.collections : KEYS.deposits;
-  const items = getData(key).filter(i => i.id !== id);
-  setData(key, items);
+  await deleteItemApi(id, type);
   toast('ลบรายการสำเร็จ');
-  if (type === 'collection') renderCollections(); else renderDeposits();
-  renderDashboard();
+  await syncData();
 }
 
 // ==================== DASHBOARD ====================
@@ -388,62 +448,61 @@ function renderSettings() {
   renderBankTags();
 }
 
-// Auto-save GAS URL on change
-document.addEventListener('change', (e) => {
+// Auto-save settings on change
+document.addEventListener('change', async (e) => {
   if (e.target.id === 'setting-gas-url') {
     const settings = getSettings();
     settings.gasUrl = e.target.value.trim();
-    saveSettings(settings);
+    await saveSettingApi(settings);
     toast('บันทึกลิงก์สำรองข้อมูลแล้ว');
   }
 });
 
-function addLocation() {
+async function addLocation() {
   const name = document.getElementById('new-location').value.trim();
-  const type = document.getElementById('new-location-type').value;
   if (!name) return;
-  const locs = getData(KEYS.locations);
+  const locs = getData('cl_locations');
   if (locs.find(l => l.name === name)) { toast('สถานที่นี้มีอยู่แล้ว', 'error'); return; }
-  locs.push({ name, type });
-  setData(KEYS.locations, locs);
+
+  await addLocationApi({ name, zone: getZone(name) });
   document.getElementById('new-location').value = '';
-  renderLocationTags();
+  await syncData();
   toast('เพิ่มสถานที่สำเร็จ');
 }
 
-function removeLocation(name) {
-  const locs = getData(KEYS.locations).filter(l => l.name !== name);
-  setData(KEYS.locations, locs);
-  renderLocationTags();
+async function removeLocation(name) {
+  if (!confirm(`ต้องการลบสถานที่ "${name}"?`)) return;
+  await removeLocationApi(name);
+  await syncData();
 }
 
 function renderLocationTags() {
   const c = document.getElementById('locations-tags');
-  const locs = getData(KEYS.locations);
-  c.innerHTML = locs.map(l => `<span class="tag">${LOC_TYPE_MAP[l.type] ? LOC_TYPE_MAP[l.type].split(' ')[0] : '📌'} ${l.name} <span class="tag-remove" onclick="removeLocation('${l.name}')">✕</span></span>`).join('');
+  const locs = getData('cl_locations');
+  c.innerHTML = locs.map(l => `<span class="tag">📌 ${l.name} <span class="tag-remove" onclick="removeLocation('${l.name}')">✕</span></span>`).join('');
 }
 
-function addBank() {
+async function addBank() {
   const name = document.getElementById('new-bank').value.trim();
   if (!name) return;
-  const banks = getData(KEYS.banks);
+  const banks = getData('cl_banks');
   if (banks.includes(name)) { toast('ธนาคารนี้มีอยู่แล้ว', 'error'); return; }
-  banks.push(name);
-  setData(KEYS.banks, banks);
+
+  await addBankApi(name);
   document.getElementById('new-bank').value = '';
-  renderBankTags();
+  await syncData();
   toast('เพิ่มธนาคารสำเร็จ');
 }
 
-function removeBank(name) {
-  const banks = getData(KEYS.banks).filter(b => b !== name);
-  setData(KEYS.banks, banks);
-  renderBankTags();
+async function removeBank(name) {
+  if (!confirm(`ต้องการลบธนาคาร "${name}"?`)) return;
+  await removeBankApi(name);
+  await syncData();
 }
 
 function renderBankTags() {
   const c = document.getElementById('banks-tags');
-  const banks = getData(KEYS.banks);
+  const banks = getData('cl_banks');
   c.innerHTML = banks.map(b => `<span class="tag">🏦 ${b} <span class="tag-remove" onclick="removeBank('${b}')">✕</span></span>`).join('');
 }
 
@@ -776,5 +835,6 @@ function checkIn() {
 }
 
 // ==================== INIT ====================
-initDefaults();
-renderDashboard();
+window.addEventListener('DOMContentLoaded', () => {
+  initDefaults();
+});
