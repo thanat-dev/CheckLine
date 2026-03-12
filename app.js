@@ -561,48 +561,128 @@ function sendDailySummary() {
 }
 
 function generateItinerary() {
-  const todayStr = today();
-  const cols = getData(KEYS.collections).filter(c => c.status !== 'completed' && c.status !== 'cancelled' && c.date === todayStr);
-  if (!cols.length) {
-    toast('ไม่มีงานรับเช็คที่ต้องเดินทางในวันนี้ (หรืองานเสร็จหมดแล้ว)', 'info');
+  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
+  if (tasks.length === 0) {
+    toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
     return;
   }
 
-  // 1. จัดกลุ่มและหาค่าการเรียงลำดับ (Order) ของแต่ละโซน
-  const grouped = {};
-  const zoneOrders = {};
-
-  cols.forEach(c => {
-    const data = getZoneData(c.location);
-    if (!grouped[data.zone]) {
-      grouped[data.zone] = [];
-      zoneOrders[data.zone] = data.order;
-    }
-    grouped[data.zone].push(c);
+  // Sort by Zone order
+  tasks.sort((a, b) => {
+    const za = getZoneData(a.location);
+    const zb = getZoneData(b.location);
+    return za.order - zb.order;
   });
 
-  // 2. เรียงลำดับรายชื่อโซนจากใกล้ไปไกล (อ้างอิง รง.ภท.)
-  const sortedZones = Object.keys(grouped).sort((a, b) => zoneOrders[a] - zoneOrders[b]);
+  let msg = `🗺️ แผนกำหนดการที่จะไป มีดังนี้\n📍 ต้นทาง: โรงงานเภสัชกรรมทหาร\n━━━━━━━━━━━━━━━`;
 
-  let msg = `🗺️ แผนการเดินทางรับเช็ค\n📍 ต้นทาง: โรงงานเภสัชกรรมทหาร\n📅 วันที่: ${fmtDate(todayStr)}\n━━━━━━━━━━━━━━━\n`;
+  const groups = {};
+  tasks.forEach(t => {
+    const z = getZone(t.location);
+    if (!groups[z]) groups[z] = [];
+    groups[z].push(t);
+  });
 
-  sortedZones.forEach(zone => {
-    msg += `\n📍 โซน: ${zone}\n`;
-    grouped[zone].forEach((item, idx) => {
-      msg += `   ${idx + 1}. ${item.location}\n`;
-      if (item.contactName || item.contactPhone || item.notes) {
-        let subMsg = '';
-        if (item.contactName || item.contactPhone) {
-          subMsg += `ติดต่อ: ${item.contactName || '-'}${item.contactPhone ? ' โทร: ' + item.contactPhone : ''}`;
-        }
-        if (item.notes) {
-          subMsg += (subMsg ? ' | ' : '') + `📝 ${item.notes}`;
-        }
-        if (subMsg) msg += `      ${subMsg}\n`;
-      }
+  const sortedZones = Object.keys(groups).sort((a, b) => {
+    return getZoneOrderByTitle(a) - getZoneOrderByTitle(b);
+  });
+
+  sortedZones.forEach(z => {
+    msg += `\n\n📍 ${z}`;
+    groups[z].forEach((t, idx) => {
+      msg += `\n${idx + 1}. ${t.location}`;
     });
   });
-  msg += `\n━━━━━━━━━━━━━━━\nจำนวนสถานที่รวม: ${cols.length} แห่ง`;
+
+  msg += `\n━━━━━━━━━━━━━━━\nจำนวนสถานที่รวม: ${tasks.length} แห่ง`;
+  showCopyModal(msg);
+}
+
+function getZoneOrderByTitle(title) {
+  for (const loc in ZONE_MAP) {
+    if (ZONE_MAP[loc].title === title) return ZONE_MAP[loc].order;
+  }
+  return 99;
+}
+
+function openItinerarySelector() {
+  const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
+  if (tasks.length === 0) {
+    toast('ไม่มีงานรับเช็คที่ค้างอยู่', 'info');
+    return;
+  }
+
+  // Sort tasks by zone before showing
+  tasks.sort((a, b) => {
+    const za = getZoneData(a.location);
+    const zb = getZoneData(b.location);
+    return za.order - zb.order;
+  });
+
+  const container = document.getElementById('selector-list');
+  container.innerHTML = '';
+
+  tasks.forEach(t => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '12px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.gap = '10px';
+    div.innerHTML = `
+      <input type="checkbox" id="sel-${t.id}" value="${t.id}" style="width:20px; height:20px; cursor:pointer">
+      <label for="sel-${t.id}" style="cursor:pointer; flex:1">
+        <div style="font-weight:500">${t.location}</div>
+        <div style="font-size:0.75rem; color:var(--text-dim)">${getZone(t.location)}</div>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+
+  openModal('itinerary-selector');
+}
+
+function generateSelectedItinerary() {
+  const container = document.getElementById('selector-list');
+  const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+  if (checked.length === 0) {
+    toast('กรุณาเลือกสถานที่อย่างน้อย 1 แห่ง', 'warning');
+    return;
+  }
+
+  const allTasks = getData(KEYS.collections);
+  const selectedTasks = allTasks.filter(t => checked.includes(t.id.toString()));
+
+  // Sort selected tasks by zone
+  selectedTasks.sort((a, b) => {
+    const za = getZoneData(a.location);
+    const zb = getZoneData(b.location);
+    return za.order - zb.order;
+  });
+
+  let msg = `🗺️ แผนกำหนดการที่มีในมือ มีดังนี้\n📍 ต้นทาง: โรงงานเภสัชกรรมทหาร\n━━━━━━━━━━━━━━━`;
+
+  const groups = {};
+  selectedTasks.forEach(t => {
+    const z = getZone(t.location);
+    if (!groups[z]) groups[z] = [];
+    groups[z].push(t);
+  });
+
+  const sortedZones = Object.keys(groups).sort((a, b) => {
+    return getZoneOrderByTitle(a) - getZoneOrderByTitle(b);
+  });
+
+  sortedZones.forEach(z => {
+    msg += `\n\n📍 ${z}`;
+    groups[z].forEach((t, idx) => {
+      msg += `\n${idx + 1}. ${t.location}`;
+    });
+  });
+
+  msg += `\n━━━━━━━━━━━━━━━\nจำนวนสถานที่วันนี้: ${selectedTasks.length} แห่ง`;
+
+  closeModal('itinerary-selector');
   showCopyModal(msg);
 }
 

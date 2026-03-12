@@ -23,7 +23,22 @@
   </nav>
 
   <!-- TOAST CONTAINER -->
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- Itinerary Selector Modal -->
+  <div class="modal-overlay" id="itinerary-selector-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📑 เลือกสถานที่สำหรับวันนี้</h2>
+        <button class="modal-close" onclick="closeModal('itinerary-selector')">&times;</button>
+      </div>
+      <div id="selector-list" style="margin-bottom:20px; max-height:400px; overflow-y:auto;">
+        <!-- Checkboxes will be rendered here -->
+      </div>
+      <button class="btn btn-primary btn-block" onclick="generateSelectedItinerary()">🗺️
+        สร้างแผนการเดินทางที่เลือก</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
 
   <!-- ============ DASHBOARD ============ -->
   <div class="main page" id="page-dashboard">
@@ -57,7 +72,9 @@
       <button class="btn btn-primary btn-lg" onclick="openModal('deposit')">🏦 + เพิ่มงานฝากธนาคาร</button>
       <button class="btn btn-warning btn-lg" onclick="sendDailySummary()">📊 สรุปรายงาน (คัดลอก)</button>
       <button class="btn btn-info btn-lg" onclick="generateItinerary()"
-        style="background:#0ea5e9; color:#fff; border:none">🗺️ แผนเดินทาง (จัดโซน)</button>
+        style="background:#0ea5e9; color:#fff; border:none">🗺️ แผนเดินทาง (ทั้งหมด)</button>
+      <button class="btn btn-secondary btn-lg" onclick="openItinerarySelector()"
+        style="background:#6366f1; color:#fff; border:none">📑 เลือกสถานที่ (สรุปรายวัน)</button>
       <button class="btn btn-lg" onclick="checkIn()" style="background:#22c55e; color:#fff; border:none">📍 เช็คอิน
         (แชร์ตำแหน่ง)</button>
     </div>
