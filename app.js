@@ -576,10 +576,25 @@ function renderDashboard() {
   if (!tbody) return;
   if (!recent.length) { tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
-  tbody.innerHTML = recent.map(r => `<tr>
-    <td data-label="วันที่">${fmtDate(r.date)}</td>
-    <td data-label="งาน"><strong>${r._name}</strong></td>
-    <td data-label="สถานะ">${statusBadge(r.status)}</td></tr>`).join('');
+  tbody.innerHTML = recent.map(r => {
+    const zData = getZoneData(r._name);
+    const lat = r.lat || zData.lat;
+    const lng = r.lng || zData.lng;
+    const distanceHtml = lat ? `<br><small style="color:var(--accent-primary)">📏 ${calculateDistance(BASE_LAT, BASE_LNG, lat, lng).toFixed(2)} กม.</small>` : '';
+    const mapBtn = lat ? `<button class="btn btn-ghost btn-sm" onclick="map.setView([${lat}, ${lng}], 16)" style="padding:2px 5px; margin-left:5px">🗺️</button>` : '';
+
+    return `<tr>
+      <td data-label="วันที่">${fmtDate(r.date)}</td>
+      <td data-label="งาน">
+        <strong>${r._name}</strong>${distanceHtml}
+      </td>
+      <td data-label="สถานะ">
+        <div style="display:flex; align-items:center; justify-content:space-between">
+          ${statusBadge(r.status)}
+          ${mapBtn}
+        </div>
+      </td></tr>`;
+  }).join('');
 
   // Smart Planning on Dashboard
   const allPending = [
