@@ -942,10 +942,10 @@ function generateProximityHtml(tasks, forDashboard = false) {
     : "ระบบประมวลผลงานที่อยู่ใกล้โรงงานที่สุด 3 อันดับแรก เพื่อช่วยท่านวางแผนการเดินทาง:";
 
   let html = `
-    <div style="margin-bottom: 20px; font-size: 1.1rem; color: var(--text-dim); font-weight: 500;">
+    <div style="margin-bottom: 16px; font-size: 1.15rem; color: var(--text-dim); font-weight: 500;">
       ${descText}
     </div>
-    <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
   `;
 
   top3.forEach((t, idx) => {
@@ -953,12 +953,12 @@ function generateProximityHtml(tasks, forDashboard = false) {
     const isCol = t.type === 'collection' || t._type === 'collection';
     const zoneName = isCol ? getZone(locName) : '🏦 งานนำฝากเช็ค';
     html += `
-      <div class="card" style="padding: 16px; border-left: 5px solid var(--primary); background: rgba(255,255,255,0.02); animation: none; transform: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="font-weight: 600; color: var(--text-main); font-size: 1.35rem;">${idx + 1}. ${locName}</div>
-          <div style="font-size: 0.9rem; background: var(--primary-gradient); color: white; padding: 4px 10px; border-radius: 100px; font-weight: 600; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);">แนะนำ</div>
+      <div class="card" style="padding: 16px; border-left: 4px solid var(--primary); background: rgba(255,255,255,0.02); animation: none; transform: none; box-shadow: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="font-weight: 600; color: var(--text-main); font-size: 1.3rem;">${idx + 1}. ${locName}</div>
+          <div style="font-size: 0.95rem; background: var(--primary-gradient); color: white; padding: 3px 10px; border-radius: 100px; font-weight: 600; box-shadow: 0 4px 8px rgba(99, 102, 241, 0.15); white-space: nowrap;">แนะนำ</div>
         </div>
-        <div style="font-size: 1.1rem; color: var(--text-dim); margin-top: 6px; font-weight: 500;">📍 ${zoneName}</div>
+        <div style="font-size: 1.05rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">📍 ${zoneName}</div>
       </div>
     `;
   });
