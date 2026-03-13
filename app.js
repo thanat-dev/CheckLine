@@ -486,10 +486,10 @@ function renderDashboard() {
   const totalEl = document.getElementById('stat-total-amount');
   if (totalEl) totalEl.textContent = fmt(totalThisMonth);
 
-  // Recent items
+  // Show all tasks for today (or all items if preferred)
   const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 นำฝากเช็ค', _name: d.bank }))];
   all.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-  const recent = all.slice(0, 8);
+  const recent = all; // Show everything instead of slice(0, 8)
 
   const tbody = document.getElementById('recent-table');
   const empty = document.getElementById('recent-empty');
