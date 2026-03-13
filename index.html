@@ -17,7 +17,7 @@
     <div class="nav-links">
       <button class="nav-link active" onclick="showPage('dashboard')" id="nav-dashboard">🏠 หน้าหลัก</button>
       <button class="nav-link" onclick="showPage('collection')" id="nav-collection">📍 รับเช็ค</button>
-      <button class="nav-link" onclick="showPage('deposit')" id="nav-deposit">🏦 ฝากธนาคาร</button>
+      <button class="nav-link" onclick="showPage('deposit')" id="nav-deposit">🏦 นำฝากเช็ค</button>
       <button class="nav-link" onclick="showPage('settings')" id="nav-settings">⚙️ ตั้งค่า</button>
     </div>
   </nav>
@@ -139,7 +139,7 @@
   <div class="main page" id="page-deposit" style="display:none">
     <div
       style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
-      <h1 class="section-title" style="margin:0">🏦 งานนำเช็คฝากธนาคาร</h1>
+      <h1 class="section-title" style="margin:0">🏦 งานนำฝากเช็คเข้าธนาคาร</h1>
       <button class="btn btn-primary" onclick="openModal('deposit')">+ เพิ่มงาน</button>
     </div>
     <div class="filter-bar">
@@ -169,7 +169,7 @@
       </div>
       <div class="empty-state" id="deposit-empty" style="display:none">
         <div class="empty-icon">📭</div>
-        <div class="empty-text">ยังไม่มีงานฝากธนาคาร</div><button class="btn btn-primary"
+        <div class="empty-text">ยังไม่มีงานนำฝากเช็ค</div><button class="btn btn-primary"
           onclick="openModal('deposit')">+ เพิ่มงานแรก</button>
       </div>
     </div>

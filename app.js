@@ -357,7 +357,7 @@ async function saveDeposit(e) {
 
   closeModal('deposit');
   e.target.reset();
-  toast(editId ? 'แก้ไขงานฝากธนาคารสำเร็จ' : 'เพิ่มงานฝากธนาคารสำเร็จ');
+  toast(editId ? 'แก้ไขงานนำฝากเช็คสำเร็จ' : 'เพิ่มงานนำฝากเช็คสำเร็จ');
   await syncData();
 }
 
@@ -389,7 +389,7 @@ function editDeposit(id) {
   if (!d) return;
   document.getElementById('dep-edit-id').value = d.id;
   document.getElementById('dep-bank').value = d.bank;
-  document.getElementById('modal-dep-title').textContent = '✏️ แก้ไขงานฝากธนาคาร';
+  document.getElementById('modal-dep-title').textContent = '✏️ แก้ไขงานนำฝากเช็คเข้าธนาคาร';
   updateBankDatalist();
   document.getElementById('modal-deposit').classList.add('active');
 }
@@ -438,7 +438,7 @@ function renderDashboard() {
   if (totalEl) totalEl.textContent = fmt(totalThisMonth);
 
   // Recent items
-  const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 ฝากธนาคาร', _name: d.bank }))];
+  const all = [...cols.map(c => ({ ...c, _type: '📍 รับเช็ค', _name: c.location })), ...deps.map(d => ({ ...d, _type: '🏦 นำฝากเช็ค', _name: d.bank }))];
   all.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
   const recent = all.slice(0, 8);
 
