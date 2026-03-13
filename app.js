@@ -234,7 +234,7 @@ function openModal(type) {
   const m = document.getElementById('modal-' + type);
   m.classList.add('active');
   if (type === 'collection') { updateLocationDatalist(); document.getElementById('col-edit-id').value = ''; document.getElementById('col-location').value = ''; document.getElementById('modal-col-title').textContent = '📍 เพิ่มงานรับเช็ค'; }
-  if (type === 'deposit') { updateBankDatalist(); document.getElementById('dep-edit-id').value = ''; document.getElementById('dep-bank').value = ''; document.getElementById('modal-dep-title').textContent = '🏦 เพิ่มงานฝากธนาคาร'; }
+  if (type === 'deposit') { updateBankDatalist(); document.getElementById('dep-edit-id').value = ''; document.getElementById('dep-bank').value = ''; document.getElementById('modal-dep-title').textContent = '🏦 เพิ่มงานนำฝากเช็คเข้าธนาคาร'; }
 }
 function closeModal(type) { document.getElementById('modal-' + type).classList.remove('active'); }
 
@@ -635,25 +635,6 @@ function sendDepositNotify(item, isUpdate = false) {
   showCopyModal(msg);
 }
 
-function sendDailySummary() {
-  const todayStr = document.getElementById('filter-col-date')?.value || today();
-  const cols = getData(KEYS.collections).filter(c => c.date === todayStr);
-  const deps = getData(KEYS.deposits).filter(d => d.date === todayStr);
-  if (!cols.length && !deps.length) { toast('ไม่มีงานวันนี้', 'info'); return; }
-
-  let msg = `📊 สรุปรายงานงานวันที่ ${fmtDate(todayStr)}\n━━━━━━━━━━━━━━━`;
-  if (cols.length) {
-    msg += `\n📍 งานรับเช็ค: ${cols.length} แห่ง`;
-    cols.forEach((c, i) => { msg += `\n   ${i + 1}. ${c.location} - ${c.checkCount} ฉบับ (${fmt(c.totalAmount)} บาท)`; });
-  }
-  if (deps.length) {
-    msg += `\n\n🏦 งานฝากธนาคาร: ${deps.length} รายการ`;
-    deps.forEach((d, i) => { msg += `\n   ${i + 1}. ${d.bank}${d.branch ? ' ' + d.branch : ''} - ${d.checkCount} ฉบับ (${fmt(d.totalAmount)} บาท)`; });
-  }
-  const total = [...cols, ...deps].reduce((s, i) => s + (i.totalAmount || 0), 0);
-  msg += `\n━━━━━━━━━━━━━━━\n💰 ยอดรวมทั้งหมด: ${fmt(total)} บาท`;
-  showCopyModal(msg);
-}
 
 function generateItinerary() {
   const tasks = getData(KEYS.collections).filter(t => t.status === 'pending');
