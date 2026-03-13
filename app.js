@@ -816,7 +816,8 @@ function checkIn() {
       address = 'ไม่สามารถดึงข้อมูลชื่อสถานที่ได้';
     }
 
-    const msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n🏛️ สถานที่ใกล้เคียง:\n${address}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
+    const trafficUrl = `https://www.google.com/maps/@${lat},${lng},15z/data=!5m1!1e1`;
+    const msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n🏛️ สถานที่ใกล้เคียง:\n${address}\n\n🚦 ดูสภาพการจราจรแบบเรียลไทม์:\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
     showCopyModal(msg);
     toast('ระบุตำแหน่งและสถานที่สำเร็จ');
