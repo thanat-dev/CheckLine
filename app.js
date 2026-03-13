@@ -820,6 +820,29 @@ function generateSelectedItinerary() {
   showCopyModal(msg);
 }
 
+async function getBatteryStatus() {
+  try {
+    if (!navigator.getBattery) return null;
+    const battery = await navigator.getBattery();
+    const level = Math.round(battery.level * 100);
+    const charging = battery.charging ? ' (กำลังชาร์จ ⚡)' : '';
+    return `${level}%${charging}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 function getTrafficEstimation(lat, lng, address = '') {
   const hour = new Date().getHours();
   const day = new Date().getDay(); // 0 = Sunday, 6 = Saturday
@@ -888,10 +911,41 @@ function checkIn() {
       address = 'ไม่สามารถดึงข้อมูลชื่อสถานที่ได้';
     }
 
+    const battery = await getBatteryStatus();
     const trafficStatus = getTrafficEstimation(lat, lng, address);
     const trafficUrl = `https://www.google.com/maps/@${lat},${lng},15z/data=!5m1!1e1`;
 
-    const msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n🏛️ สถานที่ใกล้เคียง:\n${address}\n\n🚦 สภาพการจราจร:\n${trafficStatus}\n\nดูสภาพจราจรสด (Live):\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
+    // 🏆 Smart Landmark Detection
+    let landmarkFound = '';
+    let minDistance = 0.5; // Detect if within 500 meters
+    for (const [name, data] of Object.entries(ZONE_MAP)) {
+      // Note: We don't have coords for all, but we can infer from distance later if we add them.
+      // For now, if the address includes the name, it's a direct match.
+      if (address.includes(name) || name.includes(address.split(',')[0])) {
+        landmarkFound = name;
+        break;
+      }
+    }
+
+    // 📏 Distance from Base (โรงงานเภสัชกรรมทหาร - Rama 6 approx)
+    const baseLat = 13.7663, baseLng = 100.5284;
+    const distFromBase = calculateDistance(lat, lng, baseLat, baseLng);
+
+    let msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n`;
+    
+    if (landmarkFound) {
+      msg += `🏢 สถานะ: **ถึงที่หมายแล้ว (${landmarkFound})**\n`;
+    } else {
+      msg += `🚗 สถานะ: **กำลังอยู่ระหว่างเดินทาง / ปฏิบัติงาน**\n`;
+    }
+
+    msg += `🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n`;
+    msg += `🏛️ สถานที่ใกล้เคียง:\n${address}\n`;
+    msg += `📏 ห่างจากจุดเริ่มต้น: ${distFromBase.toFixed(2)} กม.\n`;
+    if (battery) msg += `🔋 แบตเตอรี่คงเหลือ: ${battery}\n`;
+    
+    msg += `\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
+    msg += `\n🔗 ดูสภาพจราจรสด (Live):\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
     showCopyModal(msg);
     toast('ระบุตำแหน่งและสถานที่สำเร็จ');
