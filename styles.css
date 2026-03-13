@@ -346,7 +346,7 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
   .bottom-nav { display: flex; }
   
   .main { 
-    padding: 80px 4px 48px !important; /* Extremely aggressive side padding */
+    padding: 80px 4px 48px !important; 
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
@@ -357,7 +357,7 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
   .stats-grid, .quick-actions, .card, 
   .table-wrap, .section-title, .filter-bar,
   #dashboard-proximity-container {
-    margin-bottom: 32px; 
+    margin-bottom: 28px; 
     width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
@@ -380,15 +380,16 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
   .stat-value { font-size: 2rem; }
   .stat-label { font-size: 0.9rem; }
 
+  /* ADJUST QUICK ACTIONS TO SINGLE COLUMN (STACKED) */
   .quick-actions { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 6px; 
+    display: grid !important; 
+    grid-template-columns: 1fr !important; /* Stacked Vertically */
+    gap: 10px !important; 
     width: 100% !important;
   }
   
-  .btn { height: 42px; border-radius: 8px; width: 100% !important; font-size: 1rem; } 
-  .btn-lg { height: 46px; }
+  .btn { height: 46px; border-radius: 10px; width: 100% !important; font-size: 1.1rem; } 
+  .btn-lg { height: 50px; }
 
   .section-title { font-size: 1.4rem; width: 100% !important; padding-left: 4px; }
   
@@ -470,7 +471,7 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
 }
 
 @media (max-width: 480px) {
-  .main { padding: 76px 2px 48px !important; } /* NEAR ZERO SIDE PADDING */
+  .main { padding: 76px 2px 48px !important; } 
   .stats-grid { gap: 4px; }
   .stat-card { padding: 12px 4px; }
   .stat-value { font-size: 1.8rem; }
