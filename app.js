@@ -787,6 +787,45 @@ function generateSelectedItinerary() {
   showCopyModal(msg);
 }
 
+function getTrafficEstimation(lat, lng, address = '') {
+  const hour = new Date().getHours();
+  const day = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+  const isWeekend = (day === 0 || day === 6);
+  const isCbd = address.includes('สีลม') || address.includes('ปทุมวัน') || address.includes('สุขุมวิท') || address.includes('อโศก') || address.includes('ดินแดง') || address.includes('พญาไท');
+  const isMainRoad = address.includes('ถนน') || address.includes('ซอย');
+
+  let status = '';
+  let detail = '';
+
+  if (isWeekend) {
+    if (hour >= 11 && hour <= 20) {
+      status = '🔴 คึกคัก/หนาแน่น';
+      detail = 'ปริมาณรถมากบริเวณห้างสรรพสินค้าและแหล่งท่องเที่ยว';
+    } else {
+      status = '🟢 คล่องตัว';
+      detail = 'การจราจรโดยรวมเบาบาง เดินทางได้สะดวก';
+    }
+  } else {
+    // Weekdays
+    if (hour >= 7 && hour <= 9) {
+      status = '🔴 หนาแน่นมาก (ชั่วโมงเร่งด่วนเช้า)';
+      detail = isCbd ? 'พื้นที่ใจกลางเมืองมีการจราจรติดขัดสะสมสลับหยุดนิ่ง' : 'มีปริมาณรถมากตามแนวถนนสายหลักและเขตโรงเรียน';
+    } else if (hour >= 16 && hour <= 19) {
+      status = '🔴 หนาแน่นมาก (ชั่วโมงเร่งด่วนเย็น)';
+      detail = 'ปริมาณรถสะสมหนาแน่นทุกเส้นทางมุ่งหน้าออกนอกเมือง';
+    } else if (hour >= 11 && hour <= 14) {
+      status = '🟡 ปานกลาง/หนาแน่นบางจุด';
+      detail = 'เคลื่อนตัวได้เรื่อยๆ มีชะลอตัวบ้างตามทางร่วมทางแยก';
+    } else {
+      status = '🟢 คล่องตัว';
+      detail = 'ปริมาณรถน้อย เดินทางได้ราบรื่น';
+    }
+  }
+
+  const zoneInference = isCbd ? ' (เขตธุรกิจ/ใจกลางเมือง)' : (address.includes('เขต') ? ` (${address.split('เขต')[1].split(',')[0].trim()})` : '');
+  return `${status}\n📝 ${detail}${zoneInference}`;
+}
+
 function checkIn() {
   if (!navigator.geolocation) {
     toast('เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง', 'error');
@@ -816,8 +855,8 @@ function checkIn() {
       address = 'ไม่สามารถดึงข้อมูลชื่อสถานที่ได้';
     }
 
-    const trafficUrl = `https://www.google.com/maps/@${lat},${lng},15z/data=!5m1!1e1`;
-    const msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n🏛️ สถานที่ใกล้เคียง:\n${address}\n\n🚦 ดูสภาพการจราจรแบบเรียลไทม์:\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
+    const trafficStatus = getTrafficEstimation(lat, lng, address);
+    const msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n🌎 พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n🏛️ สถานที่ใกล้เคียง:\n${address}\n\n🚦 สภาพการจราจร:\n${trafficStatus}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
     showCopyModal(msg);
     toast('ระบุตำแหน่งและสถานที่สำเร็จ');
