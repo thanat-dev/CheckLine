@@ -10,6 +10,13 @@ let _state = {
   settings: {}
 };
 
+// Map variables
+let map;
+let markers = [];
+const BASE_LAT = 13.708991;
+const BASE_LNG = 100.587533;
+const BASE_NAME = 'โรงงานเภสัชกรรมทหาร';
+
 async function apiRequest(endpoint, method = 'GET', data = null) {
   try {
     const options = {
@@ -112,53 +119,46 @@ async function removeBankApi(name) {
 }
 
 // Default data
+// Final coordinates for ZONE_MAP
 const ZONE_MAP = {
-  // ... (keeping ZONE_MAP as is for frontend sorting/zoning logic)
-  // 📍 Zone 1: พญาไท / อนุสาวรีย์ชัยสมรภูมิ / พระราม 6 (ใกล้ต้นทางที่สุด)
-  'โรงพยาบาลพระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'บริษัท พีเอ็มเควิทยาเวช จำกัด (ร้านยาสิรินธรโอสถ รพ.พระมงกุฎ)': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'สถาบันวิจัยวิทยาศาสตร์การแพทย์ทหาร': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'กองคลังแพทย์ กรมแพทย์ทหารบก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'องค์การเภสัชกรรม สำนักงานใหญ่': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
-  'โรงพยาบาลทหารผ่านศึก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1 },
+  'โรงพยาบาลพระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 },
+  'สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 }, // Same as PMK
+  'บริษัท พีเอ็มเควิทยาเวช จำกัด (ร้านยาสิรินธรโอสถ รพ.พระมงกุฎ)': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 },
+  'สถาบันวิจัยวิทยาศาสตร์การแพทย์ทหาร': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.765, lng: 100.532 },
+  'กองคลังแพทย์ กรมแพทย์ทหารบก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.766, lng: 100.533 },
+  'องค์การเภสัชกรรม สำนักงานใหญ่': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.759, lng: 100.528 },
+  'โรงพยาบาลทหารผ่านศึก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.7721515, lng: 100.5518272 },
 
-  // 📍 Zone 5: ปทุมวัน / สีลม / ดินแดง (เขต CBD ชั้นใน)
-  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2 },
-  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2 },
-  'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2 },
+  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.7434319, lng: 100.5378094 },
+  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.725, lng: 100.530 },
+  'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.730, lng: 100.550 },
 
-  // 📍 Zone 4: พระนคร / ดุสิต / ป้อมปราบศัตรูพ่าย
-  'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3 },
-  'กรมแผนที่ทหาร': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3 },
-  'มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3 },
-  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3 },
+  'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.746389, lng: 100.509444 },
+  'กรมแผนที่ทหาร': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.754, lng: 100.493 },
+  'มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.755, lng: 100.500 },
+  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.762, lng: 100.512 },
 
-  // 📍 Zone 3: จตุจักร / บางซื่อ / งามวงศ์วาน / นนทบุรี
-  'โรงพยาบาลวิภาวดี (กรุงเทพฯ)': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
-  'โรงเรียนช่างฝีมือทหาร สถาบันวิชาการป้องกันประเทศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
-  'ทัณฑสถานโรงพยาบาลราชทัณฑ์': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
-  'แผนกแพทย์ กองบริหาร กรมช่างอากาศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
-  'การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
-  'กรมการแพทย์ กระทรวงสาธารณสุข': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4 },
+  'โรงพยาบาลวิภาวดี (กรุงเทพฯ)': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.846431, lng: 100.56252 },
+  'โรงเรียนช่างฝีมือทหาร สถาบันวิชาการป้องกันประเทศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.825, lng: 100.565 },
+  'ทัณฑสถานโรงพยาบาลราชทัณฑ์': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.845, lng: 100.548 },
+  'แผนกแพทย์ กองบริหาร กรมช่างอากาศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.805, lng: 100.525 },
+  'การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.808, lng: 100.505 },
+  'กรมการแพทย์ กระทรวงสาธารณสุข': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.850, lng: 100.528 },
 
-  // 📍 Zone 2: ดอนเมือง / สายไหม / หลักสี่
-  'โรงพยาบาลภูมิพลอดุลยเดช': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'กรมแพทย์ทหารอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'สถาบันเวชศาสตร์การบิน กองทัพอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'โรงพยาบาลทหารอากาศ (สีกัน)': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
-  'สสน.นทพ.': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5 },
+  'โรงพยาบาลภูมิพลอดุลยเดช': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.908889, lng: 100.618056 },
+  'กรมแพทย์ทหารอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.910, lng: 100.620 },
+  'สถาบันเวชศาสตร์การบิน กองทัพอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.912, lng: 100.622 },
+  'โรงพยาบาลทหารอากาศ (สีกัน)': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.925, lng: 100.595 },
+  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.875, lng: 100.585 },
+  'สสน.นทพ.': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.880, lng: 100.590 },
 
-  // 📍 Zone 6: ฝั่งธนบุรี
-  'โรงพยาบาลสมเด็จพระปิ่นเกล้า': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6 },
-  'กรมแพทย์ทหารเรือ': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6 },
+  'โรงพยาบาลสมเด็จพระปิ่นเกล้า': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.71, lng: 100.486944 },
+  'กรมแพทย์ทหารเรือ': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.712, lng: 100.488 },
 
-  // 📍 Zone 7: รามคำแหง / บางนา / สมุทรปราการ
-  'การกีฬาแห่งประเทศไทย': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7 },
-  'บริษัท กรุงเทพดรักสโตร์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7 },
-  'โรงพยาบาลทหารเรือกรุงเทพ': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7 },
-  'บริษัท สินแพทย์ เทพารักษ์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7 }
+  'การกีฬาแห่งประเทศไทย': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.755, lng: 100.622 },
+  'บริษัท กรุงเทพดรักสโตร์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.760, lng: 100.630 },
+  'โรงพยาบาลทหารเรือกรุงเทพ': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.675, lng: 100.600 },
+  'บริษัท สินแพทย์ เทพารักษ์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.620, lng: 100.635 }
 };
 
 function getZoneData(locationName) {
@@ -174,23 +174,63 @@ function getZone(locationName) {
 
 async function initDefaults() {
   await loadAllData();
+  initMap(); // New function call
   const locs = getData('cl_locations');
-  if (locs.length === 0) {
-    const defaultLocs = Object.keys(ZONE_MAP).map(name => ({
-      name, zone: getZone(name)
-    }));
-    for (const loc of defaultLocs) {
-      await addLocationApi(loc);
+  // ... rest as before
+}
+
+function initMap() {
+  if (map) return;
+  const container = document.getElementById('map');
+  if (!container) return;
+
+  map = L.map('map').setView([BASE_LAT, BASE_LNG], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Add Base Marker
+  L.marker([BASE_LAT, BASE_LNG], {
+    icon: L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    })
+  }).addTo(map).bindPopup(`<b>${BASE_NAME} (ต้นทาง)</b>`);
+}
+
+function updateMapMarkers() {
+  if (!map) return;
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const cols = getData(KEYS.collections).filter(c => c.status === 'pending' || c.status === 'traveling');
+  const deps = getData(KEYS.deposits).filter(d => d.status === 'pending');
+
+  const all = [
+    ...cols.map(c => ({ name: c.location, type: '📍 รับเช็ค', lat: c.lat, lng: c.lng })),
+    ...deps.map(d => ({ name: d.bank, type: '🏦 ฝากเช็ค' }))
+  ];
+
+  all.forEach(item => {
+    const zData = getZoneData(item.name);
+    const lat = item.lat || zData.lat;
+    const lng = item.lng || zData.lng;
+    
+    if (lat && lng) {
+      const m = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<b>${item.type}</b><br>${item.name}`);
+      markers.push(m);
     }
+  });
+
+  if (markers.length > 0) {
+    const group = new L.featureGroup([...markers, L.marker([BASE_LAT, BASE_LNG])]);
+    map.fitBounds(group.getBounds().pad(0.1));
   }
-  const bankList = getData('cl_banks');
-  if (bankList.length === 0) {
-    const defaultBanks = ['กรุงไทย', 'กรุงเทพ', 'ไทยพาณิชย์', 'กสิกรไทย', 'ออมสิน', 'ธ.ก.ส.'];
-    for (const b of defaultBanks) {
-      await addBankApi(b);
-    }
-  }
-  await syncData();
 }
 
 // ==================== PAGE NAVIGATION ====================
@@ -295,11 +335,15 @@ async function saveCollection(e) {
   e.preventDefault();
   const editId = document.getElementById('col-edit-id').value;
   const locationName = document.getElementById('col-location').value;
+  const latValue = document.getElementById('col-lat').value;
+  const lngValue = document.getElementById('col-lng').value;
 
   const item = {
     id: editId || 'col_' + Date.now(),
     date: today(),
     location: locationName,
+    lat: latValue ? parseFloat(latValue) : null,
+    lng: lngValue ? parseFloat(lngValue) : null,
     checkCount: 0,
     totalAmount: 0,
     contactName: '',
@@ -310,16 +354,33 @@ async function saveCollection(e) {
 
   if (editId) {
     const existing = getData('cl_collections').find(c => c.id === editId);
-    if (existing) Object.assign(item, existing, { location: locationName });
+    if (existing) Object.assign(item, existing, { location: locationName, lat: item.lat, lng: item.lng });
   }
 
   await saveItem('collection', item);
-  await addLocationApi({ name: item.location, zone: getZone(item.location) });
+  
+  // Also save to locations database for future use
+  const zoneData = getZoneData(item.location);
+  await addLocationApi({ 
+    name: item.location, 
+    zone: zoneData.zone, 
+    lat: item.lat || zoneData.lat, 
+    lng: item.lng || zoneData.lng 
+  });
 
   closeModal('collection');
   e.target.reset();
   toast(editId ? 'แก้ไขสถานที่รับเช็คสำเร็จ' : 'เพิ่มสถานที่รับเช็คสำเร็จ');
   await syncData();
+}
+
+function autoFillCoordinates() {
+  const name = document.getElementById('col-location').value;
+  const zData = getZoneData(name);
+  if (zData.lat && zData.lng) {
+    document.getElementById('col-lat').value = zData.lat;
+    document.getElementById('col-lng').value = zData.lng;
+  }
 }
 
 function renderCollections() {
@@ -362,15 +423,23 @@ function renderCollections() {
     
     // Zone Items
     groups[zName].items.forEach(c => {
+      const zData = getZoneData(c.location);
+      const lat = c.lat || zData.lat;
+      const lng = c.lng || zData.lng;
+      
       html += `<tr>
         <td data-label="วันที่">${fmtDate(c.date)}</td>
-        <td data-label="สถานที่"><strong>${c.location}</strong></td>
+        <td data-label="สถานที่">
+          <strong>${c.location}</strong>
+          ${lat ? `<br><small style="color:var(--accent-primary)">📏 ${calculateDistance(BASE_LAT, BASE_LNG, lat, lng).toFixed(2)} กม. จากโรงงาน</small>` : ''}
+        </td>
         <td data-label="โซน"><small style="color: var(--text-dim)">${zName.split(':')[0]}</small></td>
         <td data-label="สถานะ">${statusBadge(c.status)}</td>
         <td data-label="จัดการ"><div class="action-btns">
           <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
           <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
           <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
+          ${lat ? `<button class="btn btn-ghost btn-sm" onclick="map.setView([${lat}, ${lng}], 16)">🗺️</button>` : ''}
         </div></td></tr>`;
     });
   });
@@ -383,6 +452,8 @@ function editCollection(id) {
   if (!c) return;
   document.getElementById('col-edit-id').value = c.id;
   document.getElementById('col-location').value = c.location;
+  document.getElementById('col-lat').value = c.lat || '';
+  document.getElementById('col-lng').value = c.lng || '';
   document.getElementById('modal-col-title').textContent = '✏️ แก้ไขสถานที่รับเช็ค';
   updateLocationDatalist();
   document.getElementById('modal-collection').classList.add('active');
@@ -527,6 +598,7 @@ function renderDashboard() {
       proximityContainer.style.display = 'none';
     }
   }
+  updateMapMarkers(); // Update map markers after rendering dashboard
 }
 
 // ==================== SETTINGS ====================
@@ -549,12 +621,24 @@ document.addEventListener('change', async (e) => {
 
 async function addLocation() {
   const name = document.getElementById('new-location').value.trim();
+  const latValue = document.getElementById('new-location-lat').value;
+  const lngValue = document.getElementById('new-location-lng').value;
+  
   if (!name) return;
   const locs = getData('cl_locations');
   if (locs.find(l => l.name === name)) { toast('สถานที่นี้มีอยู่แล้ว', 'error'); return; }
 
-  await addLocationApi({ name, zone: getZone(name) });
+  const zoneData = getZoneData(name);
+  await addLocationApi({ 
+    name, 
+    zone: zoneData.zone,
+    lat: latValue ? parseFloat(latValue) : zoneData.lat,
+    lng: lngValue ? parseFloat(lngValue) : zoneData.lng
+  });
+  
   document.getElementById('new-location').value = '';
+  document.getElementById('new-location-lat').value = '';
+  document.getElementById('new-location-lng').value = '';
   await syncData();
   toast('เพิ่มสถานที่สำเร็จ');
 }

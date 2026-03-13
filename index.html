@@ -7,6 +7,8 @@
   <meta name="description" content="CheckLine - แอพบันทึกการเดินทางรับเช็ค พร้อมแจ้งเตือน LINE">
   <title>CheckLine - บันทึกงานรับเช็ค</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 
 <body>
@@ -91,6 +93,11 @@
         style="background:#6366f1; color:#fff; border:none">📑 เลือกสถานที่ (สรุปรายวัน)</button>
       <button class="btn btn-lg" onclick="checkIn()" style="background:#22c55e; color:#fff; border:none">📍 เช็คอิน
         (แชร์ตำแหน่ง)</button>
+    </div>
+
+    <!-- ============ MAP VIEW ============ -->
+    <div class="card" style="margin-bottom:20px; padding:0; overflow:hidden;">
+      <div id="map" style="height: 350px; width: 100%; z-index: 1;"></div>
     </div>
     
     <!-- ============ SMART TRIP PLANNING (DASHBOARD) ============ -->
@@ -218,7 +225,12 @@
           <option value="private">🏢 บริษัทเอกชน</option>
           <option value="other">📌 อื่นๆ</option>
         </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="number" step="any" class="form-input" id="new-location-lat" placeholder="ละติจูด (Lat)">
+        <input type="number" step="any" class="form-input" id="new-location-lng" placeholder="ลองจิจูด (Lng)">
         <button class="btn btn-primary btn-sm" onclick="addLocation()">+ เพิ่ม</button>
+      </div>
       </div>
       <div class="tags-container" id="locations-tags"></div>
     </div>
@@ -265,8 +277,18 @@
         <input type="hidden" id="col-edit-id">
         <div class="form-group"><label class="form-label">สถานที่ใหม่ หรือจากรายการ</label>
           <input type="text" class="form-input" id="col-location" list="location-list" required
-            placeholder="ระบบจะบันทึกเป็นงานของวันนี้อัตโนมัติ">
+            placeholder="ระบบจะบันทึกเป็นงานของวันนี้อัตโนมัติ" onchange="autoFillCoordinates()">
           <datalist id="location-list"></datalist>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
+          <div class="form-group">
+            <label class="form-label">ละติจูด (ตัวเลือก)</label>
+            <input type="number" step="any" class="form-input" id="col-lat" placeholder="13.7xxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ลองจิจูด (ตัวเลือก)</label>
+            <input type="number" step="any" class="form-input" id="col-lng" placeholder="100.5xxx">
+          </div>
         </div>
         <button type="submit" class="btn btn-primary btn-block btn-lg">💾 บันทึก</button>
       </form>
