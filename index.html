@@ -282,6 +282,20 @@
     </div>
   </div>
 
+  <!-- ============ PROXIMITY PLANNING MODAL ============ -->
+  <div class="modal-overlay" id="modal-proximity">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <div class="modal-title">🎯 แผนการเดินทาง (เริ่มจากโรงงาน)</div>
+        <button class="modal-close" onclick="closeModal('proximity')">&times;</button>
+      </div>
+      <div id="proximity-content" style="padding: 15px 0;">
+        <div class="empty-state">กำลังประมวลผลระยะทาง...</div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" onclick="closeModal('proximity')">รับทราบแผน</button>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 

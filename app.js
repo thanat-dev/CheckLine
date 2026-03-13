@@ -882,6 +882,44 @@ function getTrafficEstimation(lat, lng, address = '') {
   return `${status}\n📝 ${detail}${zoneInference}`;
 }
 
+function showClosestPlanning(tasks) {
+  const container = document.getElementById('proximity-content');
+  if (!container) return;
+
+  // We sort by Zone Order (Zone 1 is closest to base)
+  const sorted = [...tasks].sort((a, b) => a.order - b.order);
+  const top3 = sorted.slice(0, 3);
+
+  let html = `
+    <div style="margin-bottom: 15px; font-size: 0.9rem; color: var(--text-dim);">
+      ระบบประมวลผลงานที่อยู่ใกล้โรงงานที่สุด 3 อันดับแรก เพื่อช่วยท่านวางแผนการเดินทาง:
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+  `;
+
+  top3.forEach((t, idx) => {
+    const zoneName = t.type === 'collection' ? getZone(t.name) : '🏦 งานนำฝากเช็ค';
+    html += `
+      <div class="card" style="padding: 12px; border-left: 4px solid var(--accent-primary); background: rgba(255,255,255,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="font-weight: bold; color: var(--text-main);">${idx + 1}. ${t.name}</div>
+          <div style="font-size: 0.75rem; background: var(--accent-primary); color: white; padding: 2px 6px; border-radius: 4px;">แนะนำ</div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">📍 ${zoneName}</div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  
+  if (tasks.length > 3) {
+    html += `<div style="margin-top: 15px; text-align: center; font-size: 0.8rem; color: var(--text-dim);">และยังมีงานอื่นๆ อีก ${tasks.length - 3} รายการในแผน</div>`;
+  }
+
+  container.innerHTML = html;
+  document.getElementById('modal-proximity').classList.add('active');
+}
+
 function checkIn() {
   if (!navigator.geolocation) {
     toast('เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง', 'error');
@@ -941,9 +979,8 @@ function checkIn() {
       }
     }
 
-    // Identify next destination (excluding the one we are at)
+    // Identify next destination (excluding the one we are at) - USED FOR PLANNING POPUP
     const upcoming = allPending.filter(t => t.name !== atDestination);
-    const nextTask = upcoming.length > 0 ? upcoming[0].name : 'เสร็จสิ้นภารกิจทั้งหมด';
 
     let msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n`;
     
@@ -958,16 +995,18 @@ function checkIn() {
     msg += `📏 ห่างจากจุดเริ่มต้น: ${distFromBase.toFixed(2)} กม.\n`;
     if (battery) msg += `🔋 แบตเตอรี่คงเหลือ: ${battery}\n`;
     
-    msg += `\n🎯 **จุดหมายต่อไป:**\n${nextTask}`;
-    if (upcoming.length > 1) {
-      msg += `\n(เหลืออีก ${upcoming.length - 1} สถานที่ในแผน)`;
-    }
-
-    msg += `\n\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
+    msg += `\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
     msg += `\n🔗 ดูสภาพจราจรสด (Live):\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
     showCopyModal(msg);
     toast('ระบุตำแหน่งและสถานที่สำเร็จ');
+
+    // 🎯 If at Base, show the proximity planner automatically
+    if (atDestination.includes('โรงงานเภสัชกรรมทหาร') && upcoming.length > 0) {
+      setTimeout(() => {
+        showClosestPlanning(upcoming);
+      }, 1000);
+    }
   };
 
   const error = (err) => {
