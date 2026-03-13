@@ -44,6 +44,7 @@ body {
   line-height: 1.4;
   font-size: 1.25rem;
   overflow-x: hidden;
+  width: 100% !important;
 }
 
 body::before {
@@ -125,6 +126,7 @@ body::before {
   padding: 96px 40px 60px;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .section-title {
@@ -261,7 +263,7 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
 .badge-cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
 
 /* === FILTERS === */
-.filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; width: 100%; }
 .form-input, .form-select, .form-textarea { background: var(--bg-accent); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 10px 16px; color: var(--text-main); font-family: inherit; font-size: 1.15rem; transition: var(--transition); width: 100%; }
 .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 12px var(--glass-glow); }
 
@@ -337,128 +339,142 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
 }
 
 @media (max-width: 768px) {
-  body { padding-bottom: 84px; }
-  .nav { height: 60px; padding: 0 8px; } /* Even slimmer nav padding */
+  body { padding-bottom: 84px; width: 100% !important; max-width: none !important; }
+  .nav { height: 60px; padding: 0 8px; }
   .nav-brand { font-size: 1.5rem; }
   .nav-links { display: none; }
   .bottom-nav { display: flex; }
   
   .main { 
-    padding: 84px 8px 48px; /* TRULY FULL WIDTH: reduce padding to 8px */
+    padding: 80px 4px 48px !important; /* Extremely aggressive side padding */
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
+    overflow-x: hidden;
   }
   
-  /* Increased Section Spacing (De-clumping) */
-  .stats-grid, .quick-actions, .card, .table-wrap, .section-title {
+  /* FORCE EVERY MAJOR ELEMENT TO 100% WIDTH */
+  .stats-grid, .quick-actions, .card, 
+  .table-wrap, .section-title, .filter-bar,
+  #dashboard-proximity-container {
     margin-bottom: 32px; 
     width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   
   .stats-grid { 
     grid-template-columns: 1fr 1fr; 
-    gap: 8px; /* tighten gap for more room */
+    gap: 6px; 
   }
   
   .stat-card { 
-    padding: 20px 8px; 
-    border-radius: 16px;
+    padding: 16px 4px; 
+    border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.05);
+    width: 100% !important;
   }
   
-  .stat-icon { font-size: 2rem; margin-bottom: 4px; }
-  .stat-value { font-size: 2.2rem; }
-  .stat-label { font-size: 0.95rem; line-height: 1.2; }
+  .stat-icon { font-size: 1.8rem; margin-bottom: 4px; }
+  .stat-value { font-size: 2rem; }
+  .stat-label { font-size: 0.9rem; }
 
   .quick-actions { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 8px; 
-    width: 100%;
-  }
-  
-  .btn { height: 44px; border-radius: 10px; width: 100%; font-size: 1.05rem; } 
-  .btn-lg { height: 48px; }
-
-  .section-title { font-size: 1.5rem; letter-spacing: 0; width: 100%; margin-left: 4px; }
-  
-  /* Task Card Full-Width Refinement */
-  .card { padding: 20px 12px; border-radius: 16px; width: 100% !important; }
-  
-  .modal { padding: 28px 16px; width: 98%; border-radius: 20px; }
-  
-  /* Table to Card Refinement (Full Width & Balanced Alignment) */
-  tr { 
-    background: linear-gradient(135deg, var(--bg-accent), var(--bg-secondary));
-    border: 1px solid var(--glass-border); 
-    border-radius: 14px; 
-    margin-bottom: 16px; 
-    padding: 16px 12px; 
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+    gap: 6px; 
     width: 100% !important;
   }
   
+  .btn { height: 42px; border-radius: 8px; width: 100% !important; font-size: 1rem; } 
+  .btn-lg { height: 46px; }
+
+  .section-title { font-size: 1.4rem; width: 100% !important; padding-left: 4px; }
+  
+  /* Task Card Aggressive Full-Width Restoration */
+  .card { 
+    padding: 16px 8px !important; 
+    border-radius: 14px; 
+    width: 100% !important; 
+    max-width: none !important;
+    display: block !important;
+  }
+  
+  .modal { padding: 24px 12px; width: 98% !important; border-radius: 18px; }
+  
+  /* Table to Card Restoration */
+  .table-wrap { overflow: visible !important; width: 100% !important; }
+  table { width: 100% !important; display: block !important; }
+  tr { 
+    display: block !important;
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-secondary)) !important;
+    border: 1px solid var(--glass-border) !important; 
+    border-radius: 12px !important; 
+    margin-bottom: 12px !important; 
+    padding: 14px 10px !important; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important; 
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
   td { 
-    padding: 6px 0; 
-    font-size: 1.15rem; 
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+    padding: 4px 0 !important; 
+    font-size: 1.1rem !important; 
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
   }
   
   td::before { 
-    font-size: 0.8rem; 
-    letter-spacing: 0;
-    font-weight: 600;
-    color: var(--text-muted);
+    content: attr(data-label);
+    font-size: 0.75rem !important; 
+    color: var(--text-muted) !important;
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
   }
   
   td[data-label="งาน"], td[data-label="สถานที่"], td[data-label="ธนาคาร"] {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin: 8px 0;
-    padding: 0;
-    text-align: left;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    margin: 6px 0 !important;
+    text-align: left !important;
   }
   
   td[data-label="งาน"] strong, td[data-label="สถานที่"] strong, td[data-label="ธนาคาร"] strong {
-    font-size: 1.45rem; /* Larger and clearer */
-    display: block;
-    margin-top: 2px;
-    line-height: 1.25;
-    color: var(--text-main);
-    word-break: keep-all; /* Prevent awkward breaks */
+    font-size: 1.35rem !important;
+    margin-top: 2px !important;
+    line-height: 1.2 !important;
+    width: 100% !important;
+    display: block !important;
   }
   
   td[data-label="งาน"]::before, td[data-label="สถานที่"]::before, td[data-label="ธนาคาร"]::before {
-    display: block;
-    margin-bottom: 2px;
+    display: block !important;
+    margin-bottom: 2px !important;
   }
   
   td:last-child { 
-    margin-top: 12px; 
-    padding-top: 12px; 
+    margin-top: 10px !important; 
+    padding-top: 10px !important; 
     border-top: 1px solid var(--glass-border) !important; 
-    justify-content: flex-end;
-    gap: 8px;
+    justify-content: flex-end !important;
+    gap: 6px !important;
   }
   
-  .badge { font-size: 0.95rem; padding: 4px 12px; }
+  .badge { font-size: 0.9rem !important; padding: 4px 10px !important; }
 }
 
 @media (max-width: 480px) {
-  .main { padding: 80px 6px 48px; } /* NEAR ZERO padding for max reach */
-  .stats-grid { gap: 6px; }
-  .stat-card { padding: 16px 6px; }
-  .stat-value { font-size: 2rem; }
-  .card { padding: 16px 10px; }
-  
-  td[data-label="งาน"] strong, td[data-label="สถานที่"] strong, td[data-label="ธนาคาร"] strong {
-    font-size: 1.4rem; /* Tiny bit smaller on very small screens to fit more */
-  }
+  .main { padding: 76px 2px 48px !important; } /* NEAR ZERO SIDE PADDING */
+  .stats-grid { gap: 4px; }
+  .stat-card { padding: 12px 4px; }
+  .stat-value { font-size: 1.8rem; }
+  .card { padding: 12px 6px !important; }
 }
 
 /* Custom Scrollbar */
