@@ -305,22 +305,55 @@ function renderCollections() {
   const dateF = document.getElementById('filter-col-date').value;
   const statusF = document.getElementById('filter-col-status').value;
   const searchF = document.getElementById('filter-col-search').value.toLowerCase();
+  
   if (dateF) cols = cols.filter(c => c.date === dateF);
   if (statusF) cols = cols.filter(c => c.status === statusF);
   if (searchF) cols = cols.filter(c => (c.location + c.contactName + c.notes).toLowerCase().includes(searchF));
 
   const tbody = document.getElementById('collection-table');
   const empty = document.getElementById('collection-empty');
-  if (!cols.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  
+  if (!cols.length) { 
+    tbody.innerHTML = ''; 
+    empty.style.display = 'block'; 
+    return; 
+  }
+  
   empty.style.display = 'none';
-  tbody.innerHTML = cols.map(c => `<tr>
-    <td>${fmtDate(c.date)}</td><td><strong>${c.location}</strong></td>
-    <td>${statusBadge(c.status)}</td>
-    <td><div class="action-btns">
-      <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
-      <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
-      <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
-    </div></td></tr>`).join('');
+
+  // Group by Zone
+  const groups = {};
+  cols.forEach(c => {
+    const zData = getZoneData(c.location);
+    const zName = zData.zone;
+    if (!groups[zName]) groups[zName] = { items: [], order: zData.order };
+    groups[zName].items.push(c);
+  });
+
+  // Sort zones by order
+  const sortedZones = Object.keys(groups).sort((a, b) => groups[a].order - groups[b].order);
+
+  let html = '';
+  sortedZones.forEach(zName => {
+    // Zone Header Row
+    html += `<tr class="zone-header-row"><td colspan="5" style="background: rgba(99, 102, 241, 0.1); font-weight: bold; color: var(--accent-primary); padding: 12px 15px;">📍 ${zName}</td></tr>`;
+    
+    // Zone Items
+    groups[zName].items.forEach(c => {
+      html += `<tr>
+        <td>${fmtDate(c.date)}</td>
+        <td><strong>${c.location}</strong></td>
+        <td><small style="color: var(--text-dim)">${zName.split(':')[0]}</small></td>
+        <td>${statusBadge(c.status)}</td>
+        <td><div class="action-btns">
+          <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
+        </div></td></tr>`;
+    });
+  });
+
+  tbody.innerHTML = html;
 }
 
 function editCollection(id) {
