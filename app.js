@@ -925,21 +925,25 @@ function checkIn() {
     ];
     allPending.sort((a, b) => a.order - b.order);
 
+    // 📐 Distance from Base (โรงงานเภสัชกรรมทหาร - Phra Khanong/Khlong Toei area based on check-in)
+    const baseLat = 13.708991, baseLng = 100.587533;
+    const distFromBase = calculateDistance(lat, lng, baseLat, baseLng);
+
     let atDestination = '';
-    for (const task of allPending) {
-      if (address.includes(task.name) || task.name.includes(address.split(',')[0].trim())) {
-        atDestination = task.name;
-        break;
+    if (distFromBase < 0.05) {
+      atDestination = 'โรงงานเภสัชกรรมทหาร (จุดเริ่มต้น)';
+    } else {
+      for (const task of allPending) {
+        if (address.includes(task.name) || task.name.includes(address.split(',')[0].trim())) {
+          atDestination = task.name;
+          break;
+        }
       }
     }
 
     // Identify next destination (excluding the one we are at)
     const upcoming = allPending.filter(t => t.name !== atDestination);
     const nextTask = upcoming.length > 0 ? upcoming[0].name : 'เสร็จสิ้นภารกิจทั้งหมด';
-
-    // 📏 Distance from Base (โรงงานเภสัชกรรมทหาร - Rama 6 approx)
-    const baseLat = 13.7663, baseLng = 100.5284;
-    const distFromBase = calculateDistance(lat, lng, baseLat, baseLng);
 
     let msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n`;
     
