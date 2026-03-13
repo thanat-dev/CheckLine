@@ -915,17 +915,27 @@ function checkIn() {
     const trafficStatus = getTrafficEstimation(lat, lng, address);
     const trafficUrl = `https://www.google.com/maps/@${lat},${lng},15z/data=!5m1!1e1`;
 
-    // 🏆 Smart Landmark Detection
-    let landmarkFound = '';
-    let minDistance = 0.5; // Detect if within 500 meters
-    for (const [name, data] of Object.entries(ZONE_MAP)) {
-      // Note: We don't have coords for all, but we can infer from distance later if we add them.
-      // For now, if the address includes the name, it's a direct match.
-      if (address.includes(name) || name.includes(address.split(',')[0])) {
-        landmarkFound = name;
+    // 🏆 Smart Destination Tracking
+    const pendingCols = getData(KEYS.collections).filter(t => t.status === 'pending');
+    const pendingDeps = getData(KEYS.deposits).filter(t => t.status === 'pending');
+    
+    const allPending = [
+      ...pendingCols.map(t => ({ id: t.id, name: t.location, type: 'collection', order: getZoneData(t.location).order })),
+      ...pendingDeps.map(t => ({ id: t.id, name: `🏦 ${t.bank}${t.branch ? ' ('+t.branch+')' : ''}`, type: 'deposit', order: 90 }))
+    ];
+    allPending.sort((a, b) => a.order - b.order);
+
+    let atDestination = '';
+    for (const task of allPending) {
+      if (address.includes(task.name) || task.name.includes(address.split(',')[0].trim())) {
+        atDestination = task.name;
         break;
       }
     }
+
+    // Identify next destination (excluding the one we are at)
+    const upcoming = allPending.filter(t => t.name !== atDestination);
+    const nextTask = upcoming.length > 0 ? upcoming[0].name : 'เสร็จสิ้นภารกิจทั้งหมด';
 
     // 📏 Distance from Base (โรงงานเภสัชกรรมทหาร - Rama 6 approx)
     const baseLat = 13.7663, baseLng = 100.5284;
@@ -933,8 +943,8 @@ function checkIn() {
 
     let msg = `📍 รายงานตำแหน่งปัจจุบัน (Check-in)\n━━━━━━━━━━━━━━━\n📅 วันที่: ${date}\n⏰ เวลา: ${time}\n`;
     
-    if (landmarkFound) {
-      msg += `🏢 สถานะ: **ถึงที่หมายแล้ว (${landmarkFound})**\n`;
+    if (atDestination) {
+      msg += `🏢 สถานะ: **ถึงที่หมายแล้ว (${atDestination})**\n`;
     } else {
       msg += `🚗 สถานะ: **กำลังอยู่ระหว่างเดินทาง / ปฏิบัติงาน**\n`;
     }
@@ -944,7 +954,12 @@ function checkIn() {
     msg += `📏 ห่างจากจุดเริ่มต้น: ${distFromBase.toFixed(2)} กม.\n`;
     if (battery) msg += `🔋 แบตเตอรี่คงเหลือ: ${battery}\n`;
     
-    msg += `\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
+    msg += `\n🎯 **จุดหมายต่อไป:**\n${nextTask}`;
+    if (upcoming.length > 1) {
+      msg += `\n(เหลืออีก ${upcoming.length - 1} สถานที่ในแผน)`;
+    }
+
+    msg += `\n\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
     msg += `\n🔗 ดูสภาพจราจรสด (Live):\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
     showCopyModal(msg);
