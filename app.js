@@ -196,9 +196,16 @@ async function initDefaults() {
 // ==================== PAGE NAVIGATION ====================
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).style.display = 'block';
-  document.getElementById('nav-' + page).classList.add('active');
+  document.querySelectorAll('.nav-link, .bottom-nav-link').forEach(n => n.classList.remove('active'));
+  
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.style.display = 'block';
+  
+  const navLink = document.getElementById('nav-' + page);
+  if (navLink) navLink.classList.add('active');
+  
+  const mobileNavLink = document.getElementById('m-nav-' + page);
+  if (mobileNavLink) mobileNavLink.classList.add('active');
   if (page === 'dashboard') renderDashboard();
   else if (page === 'collection') renderCollections();
   else if (page === 'deposit') renderDeposits();
@@ -356,11 +363,11 @@ function renderCollections() {
     // Zone Items
     groups[zName].items.forEach(c => {
       html += `<tr>
-        <td>${fmtDate(c.date)}</td>
-        <td><strong>${c.location}</strong></td>
-        <td><small style="color: var(--text-dim)">${zName.split(':')[0]}</small></td>
-        <td>${statusBadge(c.status)}</td>
-        <td><div class="action-btns">
+        <td data-label="วันที่">${fmtDate(c.date)}</td>
+        <td data-label="สถานที่"><strong>${c.location}</strong></td>
+        <td data-label="โซน"><small style="color: var(--text-dim)">${zName.split(':')[0]}</small></td>
+        <td data-label="สถานะ">${statusBadge(c.status)}</td>
+        <td data-label="จัดการ"><div class="action-btns">
           <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
           <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
           <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
@@ -424,9 +431,11 @@ function renderDeposits() {
   if (!deps.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = deps.map(d => `<tr>
-    <td>${fmtDate(d.date)}</td><td><strong>${d.bank}</strong></td><td>${d.branch || '-'}</td>
-    <td>${statusBadge(d.status)}</td>
-    <td><div class="action-btns">
+    <td data-label="วันที่">${fmtDate(d.date)}</td>
+    <td data-label="ธนาคาร"><strong>${d.bank}</strong></td>
+    <td data-label="สาขา">${d.branch || '-'}</td>
+    <td data-label="สถานะ">${statusBadge(d.status)}</td>
+    <td data-label="จัดการ"><div class="action-btns">
       <button class="btn btn-ghost btn-sm" onclick="editDeposit('${d.id}')">✏️</button>
       <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${d.id}','deposit')">🔄</button>
       <button class="btn btn-ghost btn-sm" onclick="deleteItem('${d.id}','deposit')">🗑️</button>
@@ -497,8 +506,9 @@ function renderDashboard() {
   if (!recent.length) { tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
   tbody.innerHTML = recent.map(r => `<tr>
-    <td>${fmtDate(r.date)}</td><td><strong>${r._name}</strong></td>
-    <td>${statusBadge(r.status)}</td></tr>`).join('');
+    <td data-label="วันที่">${fmtDate(r.date)}</td>
+    <td data-label="งาน"><strong>${r._name}</strong></td>
+    <td data-label="สถานะ">${statusBadge(r.status)}</td></tr>`).join('');
 
   // Smart Planning on Dashboard
   const allPending = [

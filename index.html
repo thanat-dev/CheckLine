@@ -22,6 +22,26 @@
     </div>
   </nav>
 
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-link active" onclick="showPage('dashboard')" id="m-nav-dashboard">
+      <span class="m-nav-icon">🏠</span>
+      <span class="m-nav-label">หน้าหลัก</span>
+    </button>
+    <button class="bottom-nav-link" onclick="showPage('collection')" id="m-nav-collection">
+      <span class="m-nav-icon">📍</span>
+      <span class="m-nav-label">รับเช็ค</span>
+    </button>
+    <button class="bottom-nav-link" onclick="showPage('deposit')" id="m-nav-deposit">
+      <span class="m-nav-icon">🏦</span>
+      <span class="m-nav-label">ฝากเช็ค</span>
+    </button>
+    <button class="bottom-nav-link" onclick="showPage('settings')" id="m-nav-settings">
+      <span class="m-nav-icon">⚙️</span>
+      <span class="m-nav-label">ตั้งค่า</span>
+    </button>
+  </nav>
+
   <!-- TOAST CONTAINER -->
   <!-- Itinerary Selector Modal -->
   <div class="modal-overlay" id="modal-itinerary-selector">
