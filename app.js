@@ -499,6 +499,24 @@ function renderDashboard() {
   tbody.innerHTML = recent.map(r => `<tr>
     <td>${fmtDate(r.date)}</td><td><strong>${r._name}</strong></td>
     <td>${statusBadge(r.status)}</td></tr>`).join('');
+
+  // Smart Planning on Dashboard
+  const allPending = [
+    ...cols.filter(c => c.status === 'pending').map(c => ({ ...c, name: c.location, type: 'collection', order: getZoneData(c.location).order })),
+    ...deps.filter(d => d.status === 'pending').map(d => ({ ...d, name: d.bank, type: 'deposit', order: 90 }))
+  ];
+
+  const proximityContainer = document.getElementById('dashboard-proximity-container');
+  const proximityContent = document.getElementById('dashboard-proximity-content');
+
+  if (proximityContainer && proximityContent) {
+    if (allPending.length > 0) {
+      proximityContent.innerHTML = generateProximityHtml(allPending, true);
+      proximityContainer.style.display = 'block';
+    } else {
+      proximityContainer.style.display = 'none';
+    }
+  }
 }
 
 // ==================== SETTINGS ====================
@@ -897,27 +915,37 @@ function getTrafficEstimation(lat, lng, address = '') {
   return `${status}\n📝 ${detail}${zoneInference}`;
 }
 
-function showClosestPlanning(tasks) {
-  const container = document.getElementById('proximity-content');
-  if (!container) return;
+function generateProximityHtml(tasks, forDashboard = false) {
+  if (!tasks || tasks.length === 0) return '';
 
-  // We sort by Zone Order (Zone 1 is closest to base)
-  const sorted = [...tasks].sort((a, b) => a.order - b.order);
+  // Sort by Zone Order (Zone 1 is closest to base)
+  const sorted = [...tasks].sort((a, b) => {
+    const za = a.type === 'collection' || a._type === 'collection' ? getZoneData(a.name || a.location) : { order: 90 };
+    const zb = b.type === 'collection' || b._type === 'collection' ? getZoneData(b.name || b.location) : { order: 90 };
+    return za.order - (zb.order || 99);
+  });
+
   const top3 = sorted.slice(0, 3);
+
+  const descText = forDashboard 
+    ? "ระบบช่วยแนะนำงานที่อยู่ใกล้โรงงานที่สุด เพื่อให้ท่านตัดสินใจเริ่มงานได้รวดเร็ว:" 
+    : "ระบบประมวลผลงานที่อยู่ใกล้โรงงานที่สุด 3 อันดับแรก เพื่อช่วยท่านวางแผนการเดินทาง:";
 
   let html = `
     <div style="margin-bottom: 15px; font-size: 0.9rem; color: var(--text-dim);">
-      ระบบประมวลผลงานที่อยู่ใกล้โรงงานที่สุด 3 อันดับแรก เพื่อช่วยท่านวางแผนการเดินทาง:
+      ${descText}
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
   `;
 
   top3.forEach((t, idx) => {
-    const zoneName = t.type === 'collection' ? getZone(t.name) : '🏦 งานนำฝากเช็ค';
+    const locName = t.name || t.location;
+    const isCol = t.type === 'collection' || t._type === 'collection';
+    const zoneName = isCol ? getZone(locName) : '🏦 งานนำฝากเช็ค';
     html += `
       <div class="card" style="padding: 12px; border-left: 4px solid var(--accent-primary); background: rgba(255,255,255,0.03);">
         <div style="display: flex; justify-content: space-between; align-items: start;">
-          <div style="font-weight: bold; color: var(--text-main);">${idx + 1}. ${t.name}</div>
+          <div style="font-weight: bold; color: var(--text-main);">${idx + 1}. ${locName}</div>
           <div style="font-size: 0.75rem; background: var(--accent-primary); color: white; padding: 2px 6px; border-radius: 4px;">แนะนำ</div>
         </div>
         <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">📍 ${zoneName}</div>
@@ -926,12 +954,19 @@ function showClosestPlanning(tasks) {
   });
 
   html += `</div>`;
-  
+
   if (tasks.length > 3) {
-    html += `<div style="margin-top: 15px; text-align: center; font-size: 0.8rem; color: var(--text-dim);">และยังมีงานอื่นๆ อีก ${tasks.length - 3} รายการในแผน</div>`;
+    const extraCount = tasks.length - 3;
+    html += `<div style="margin-top: 15px; text-align: center; font-size: 0.8rem; color: var(--text-dim);">และยังมีงานอื่นๆ อีก ${extraCount} รายการในแผน</div>`;
   }
 
-  container.innerHTML = html;
+  return html;
+}
+
+function showClosestPlanning(tasks) {
+  const container = document.getElementById('proximity-content');
+  if (!container) return;
+  container.innerHTML = generateProximityHtml(tasks, false);
   document.getElementById('modal-proximity').classList.add('active');
 }
 
