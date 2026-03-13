@@ -953,12 +953,12 @@ function generateProximityHtml(tasks, forDashboard = false) {
     const isCol = t.type === 'collection' || t._type === 'collection';
     const zoneName = isCol ? getZone(locName) : '🏦 งานนำฝากเช็ค';
     html += `
-      <div class="card" style="padding: 24px; border-left: 6px solid var(--primary); background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); animation: none; transform: none; box-shadow: 0 8px 20px rgba(0,0,0,0.2); margin-bottom: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-direction: column;">
-          <div style="font-weight: 700; color: var(--text-main); font-size: 1.4rem; line-height: 1.3;">${idx + 1}. ${locName}</div>
-          <div style="font-size: 0.95rem; background: var(--primary-gradient); color: white; padding: 4px 14px; border-radius: 100px; font-weight: 700; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); white-space: nowrap; align-self: flex-start;">แนะนำ</div>
+      <div class="card" style="padding: 16px 12px; border-left: 6px solid var(--primary); background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); animation: none; transform: none; box-shadow: 0 8px 16px rgba(0,0,0,0.2); margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-direction: column;">
+          <div style="font-weight: 700; color: var(--text-main); font-size: 1.4rem; line-height: 1.25;">${idx + 1}. ${locName}</div>
+          <div style="font-size: 0.9rem; background: var(--primary-gradient); color: white; padding: 3px 12px; border-radius: 100px; font-weight: 700; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); white-space: nowrap; align-self: flex-start;">แนะนำ</div>
         </div>
-        <div style="font-size: 1.1rem; color: var(--text-muted); margin-top: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px;">📍 <span>${zoneName}</span></div>
+        <div style="font-size: 1.05rem; color: var(--text-muted); margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px;">📍 <span>${zoneName}</span></div>
       </div>
     `;
   });

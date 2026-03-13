@@ -291,7 +291,7 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
   border: 1px solid rgba(99, 102, 241, 0.2);
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(168, 85, 247, 0.03));
   padding: 32px;
-  width: 100% !important; /* Force full width on dashboard */
+  width: 100% !important;
 }
 
 /* === BOTTOM NAVIGATION (MOBILE) === */
@@ -338,123 +338,127 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
 
 @media (max-width: 768px) {
   body { padding-bottom: 84px; }
-  .nav { height: 60px; padding: 0 12px; } /* Slimmer padding for full width feel */
+  .nav { height: 60px; padding: 0 8px; } /* Even slimmer nav padding */
   .nav-brand { font-size: 1.5rem; }
   .nav-links { display: none; }
   .bottom-nav { display: flex; }
   
   .main { 
-    padding: 84px 12px 48px; /* Force more width by reducing side padding */
-    width: 100%;
-    margin: 0;
+    padding: 84px 8px 48px; /* TRULY FULL WIDTH: reduce padding to 8px */
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
   
   /* Increased Section Spacing (De-clumping) */
   .stats-grid, .quick-actions, .card, .table-wrap, .section-title {
-    margin-bottom: 36px; 
-    width: 100% !important; /* Ensure everything is 100% */
+    margin-bottom: 32px; 
+    width: 100% !important;
   }
   
   .stats-grid { 
     grid-template-columns: 1fr 1fr; 
-    gap: 12px; 
+    gap: 8px; /* tighten gap for more room */
   }
   
   .stat-card { 
-    padding: 24px 12px; 
-    border-radius: 18px;
+    padding: 20px 8px; 
+    border-radius: 16px;
     border: 1px solid rgba(255,255,255,0.05);
   }
   
-  .stat-icon { font-size: 2.22rem; margin-bottom: 8px; }
-  .stat-value { font-size: 2.5rem; }
-  .stat-label { font-size: 1rem; color: var(--text-muted); }
+  .stat-icon { font-size: 2rem; margin-bottom: 4px; }
+  .stat-value { font-size: 2.2rem; }
+  .stat-label { font-size: 0.95rem; line-height: 1.2; }
 
   .quick-actions { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 12px; 
+    gap: 8px; 
     width: 100%;
   }
   
-  .btn { height: 46px; border-radius: 12px; width: 100%; } 
-  .btn-lg { height: 50px; }
+  .btn { height: 44px; border-radius: 10px; width: 100%; font-size: 1.05rem; } 
+  .btn-lg { height: 48px; }
 
-  .section-title { font-size: 1.6rem; letter-spacing: 0.3px; width: 100%; }
+  .section-title { font-size: 1.5rem; letter-spacing: 0; width: 100%; margin-left: 4px; }
   
   /* Task Card Full-Width Refinement */
-  .card { padding: 24px; border-radius: 20px; width: 100% !important; margin-left: 0; margin-right: 0; }
+  .card { padding: 20px 12px; border-radius: 16px; width: 100% !important; }
   
-  .modal { padding: 32px 20px; width: 96%; border-radius: 24px; }
+  .modal { padding: 28px 16px; width: 98%; border-radius: 20px; }
   
   /* Table to Card Refinement (Full Width & Balanced Alignment) */
   tr { 
     background: linear-gradient(135deg, var(--bg-accent), var(--bg-secondary));
     border: 1px solid var(--glass-border); 
-    border-radius: 18px; 
-    margin-bottom: 20px; 
-    padding: 20px 16px; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+    border-radius: 14px; 
+    margin-bottom: 16px; 
+    padding: 16px 12px; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
     width: 100% !important;
   }
   
   td { 
-    padding: 10px 0; 
-    font-size: 1.2rem; 
+    padding: 6px 0; 
+    font-size: 1.15rem; 
     display: flex;
-    justify-content: space-between; /* Ensures label on left, value on right */
+    justify-content: space-between;
     align-items: center;
     width: 100%;
   }
   
   td::before { 
-    content: attr(data-label);
-    font-size: 0.85rem; 
-    letter-spacing: 0.5px;
+    font-size: 0.8rem; 
+    letter-spacing: 0;
     font-weight: 600;
     color: var(--text-muted);
-    text-transform: uppercase;
   }
   
-  td[data-label="งาน"] {
+  td[data-label="งาน"], td[data-label="สถานที่"], td[data-label="ธนาคาร"] {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin: 12px 0;
+    margin: 8px 0;
     padding: 0;
     text-align: left;
   }
   
   td[data-label="งาน"] strong, td[data-label="สถานที่"] strong, td[data-label="ธนาคาร"] strong {
-    font-size: 1.45rem;
+    font-size: 1.45rem; /* Larger and clearer */
     display: block;
-    margin-top: 6px;
-    line-height: 1.3;
+    margin-top: 2px;
+    line-height: 1.25;
     color: var(--text-main);
+    word-break: keep-all; /* Prevent awkward breaks */
   }
   
-  td[data-label="งาน"]::before {
+  td[data-label="งาน"]::before, td[data-label="สถานที่"]::before, td[data-label="ธนาคาร"]::before {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   
   td:last-child { 
-    margin-top: 16px; 
-    padding-top: 16px; 
+    margin-top: 12px; 
+    padding-top: 12px; 
     border-top: 1px solid var(--glass-border) !important; 
     justify-content: flex-end;
     gap: 8px;
   }
   
-  .badge { font-size: 1rem; padding: 6px 16px; }
+  .badge { font-size: 0.95rem; padding: 4px 12px; }
 }
 
 @media (max-width: 480px) {
-  .main { padding: 84px 10px 48px; } /* Nearly zero side padding for maximum space */
-  .stats-grid { gap: 8px; }
-  .stat-card { padding: 24px 8px; }
-  .stat-value { font-size: 2.2rem; }
-  .card { padding: 20px 16px; }
+  .main { padding: 80px 6px 48px; } /* NEAR ZERO padding for max reach */
+  .stats-grid { gap: 6px; }
+  .stat-card { padding: 16px 6px; }
+  .stat-value { font-size: 2rem; }
+  .card { padding: 16px 10px; }
+  
+  td[data-label="งาน"] strong, td[data-label="สถานที่"] strong, td[data-label="ธนาคาร"] strong {
+    font-size: 1.4rem; /* Tiny bit smaller on very small screens to fit more */
+  }
 }
 
 /* Custom Scrollbar */
