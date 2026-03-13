@@ -117,6 +117,23 @@ const initDb = async () => {
       for (const [name, zone] of defaultLocs) {
         await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, zone]);
       }
+
+      // Seed sample deposits for today (13/03/2569) if the table is empty
+      const depCheck = await client.query('SELECT COUNT(*) FROM deposits');
+      if (parseInt(depCheck.rows[0].count) === 0) {
+        const todayStr = '2026-03-13'; // Database format YYYY-MM-DD
+        const sampleDeps = [
+          ['dep_seed_1', todayStr, 'ธนาคารกรุงไทย', 'สาขาพหลโยธิน', 5, 50000, 'งานประจำเช้า'],
+          ['dep_seed_2', todayStr, 'ธนาคารกรุงเทพ', 'สาขาพหลโยธิน', 3, 25000, 'งานประจำบ่าย']
+        ];
+        for (const [id, date, bank, branch, count, total, notes] of sampleDeps) {
+          await client.query(
+            `INSERT INTO deposits (id, date, bank, branch, check_count, total_amount, notes, status, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', CURRENT_TIMESTAMP)`,
+            [id, date, bank, branch, count, total, notes]
+          );
+        }
+      }
     }
 
         console.log('Database initialized successfully');
