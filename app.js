@@ -239,8 +239,23 @@ function openModal(type) {
 }
 function closeModal(type) { document.getElementById('modal-' + type).classList.remove('active'); }
 
-function showCopyModal(text) {
+function showCopyModal(text, lat = null, lng = null) {
   document.getElementById('copy-text').value = text;
+  
+  const mapContainer = document.getElementById('map-preview-container');
+  const mapIframe = document.getElementById('map-iframe');
+  
+  if (lat && lng && mapContainer && mapIframe) {
+    // URL for Google Maps with Traffic Layer enabled (?layer=t doesn't work in embed easily, but we use search with t=m)
+    // Actually, the most reliable embed for traffic is using the classic embed URL format
+    const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=15&output=embed&layer=t`;
+    mapIframe.src = embedUrl;
+    mapContainer.style.display = 'block';
+  } else if (mapContainer) {
+    mapContainer.style.display = 'none';
+    mapIframe.src = '';
+  }
+  
   document.getElementById('modal-copy').classList.add('active');
 }
 
@@ -998,7 +1013,7 @@ function checkIn() {
     msg += `\n🚦 สภาพการจราจร:\n${trafficStatus}\n`;
     msg += `\n🔗 ดูสภาพจราจรสด (Live):\n${trafficUrl}\n\n🗺️ ลิงก์แผนที่:\n${mapUrl}\n━━━━━━━━━━━━━━━`;
 
-    showCopyModal(msg);
+    showCopyModal(msg, lat, lng);
     toast('ระบุตำแหน่งและสถานที่สำเร็จ');
 
     // 🎯 If at Base, show the proximity planner automatically
