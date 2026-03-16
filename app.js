@@ -173,10 +173,9 @@ function getZone(locationName) {
 }
 
 async function initDefaults() {
-  await loadAllData();
-  initMap(); // New function call
+  await syncData();
+  initMap(); 
   const locs = getData('cl_locations');
-  // ... rest as before
 }
 
 function initMap() {
