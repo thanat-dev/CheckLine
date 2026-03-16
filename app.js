@@ -635,6 +635,10 @@ document.addEventListener('change', async (e) => {
 
 async function addLocation() {
   const name = document.getElementById('new-location').value.trim();
+  const billing = document.getElementById('new-location-billing').value.trim();
+  const address = document.getElementById('new-location-address').value.trim();
+  const contact = document.getElementById('new-location-contact').value.trim();
+  const phone = document.getElementById('new-location-phone').value.trim();
   const latValue = document.getElementById('new-location-lat').value;
   const lngValue = document.getElementById('new-location-lng').value;
   
@@ -646,11 +650,19 @@ async function addLocation() {
   await addLocationApi({ 
     name, 
     zone: zoneData.zone,
+    billing_schedule: billing,
+    address: address,
+    contact_name: contact,
+    contact_phone: phone,
     lat: latValue ? parseFloat(latValue) : zoneData.lat,
     lng: lngValue ? parseFloat(lngValue) : zoneData.lng
   });
   
   document.getElementById('new-location').value = '';
+  document.getElementById('new-location-billing').value = '';
+  document.getElementById('new-location-address').value = '';
+  document.getElementById('new-location-contact').value = '';
+  document.getElementById('new-location-phone').value = '';
   document.getElementById('new-location-lat').value = '';
   document.getElementById('new-location-lng').value = '';
   await syncData();
@@ -841,7 +853,9 @@ function generateItinerary() {
   sortedZones.forEach(z => {
     msg += `\n\n📍 ${z}`;
     groups[z].forEach((t, idx) => {
-      msg += `\n${idx + 1}. ${t.location}`;
+      const locInfo = getData(KEYS.locations).find(l => l.name === t.location);
+      const billing = locInfo && locInfo.billing_schedule ? ` - ${locInfo.billing_schedule}` : '';
+      msg += `\n${idx + 1}. ${t.location}${billing}`;
     });
   });
 
@@ -951,7 +965,9 @@ function generateSelectedItinerary() {
   sortedZones.forEach(z => {
     msg += `\n\n📍 ${z}`;
     groups[z].forEach((t, idx) => {
-      msg += `\n${idx + 1}. ${t._label}`;
+      const locInfo = getData(KEYS.locations).find(l => l.name === (t.location || t._label));
+      const billing = locInfo && locInfo.billing_schedule ? ` - ${locInfo.billing_schedule}` : '';
+      msg += `\n${idx + 1}. ${t._label}${billing}`;
     });
   });
 

@@ -51,7 +51,13 @@ const initDb = async () => {
       CREATE TABLE IF NOT EXISTS locations (
         id SERIAL PRIMARY KEY,
         name TEXT UNIQUE,
-        zone TEXT
+        zone TEXT,
+        billing_schedule TEXT,
+        address TEXT,
+        contact_name TEXT,
+        contact_phone TEXT,
+        lat NUMERIC,
+        lng NUMERIC
       );
       CREATE TABLE IF NOT EXISTS banks (
         id SERIAL PRIMARY KEY,
@@ -67,6 +73,14 @@ const initDb = async () => {
     await client.query('ALTER TABLE collections ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     await client.query('ALTER TABLE deposits ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     
+    // Migrations: Add new location fields if not exists
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS billing_schedule TEXT');
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS address TEXT');
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS contact_name TEXT');
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS contact_phone TEXT');
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS lat NUMERIC');
+    await client.query('ALTER TABLE locations ADD COLUMN IF NOT EXISTS lng NUMERIC');
+
     // Migration: Add "Zone " prefix to existing zones if missing
     await client.query("UPDATE locations SET zone = 'Zone ' || zone WHERE zone ~ '^[0-9]:' AND zone NOT LIKE 'Zone %'");
     
@@ -229,9 +243,15 @@ app.get('/api/locations', async (req, res) => {
 });
 
 app.post('/api/locations', async (req, res) => {
-    const { name, zone } = req.body;
+    const { name, zone, billing_schedule, address, contact_name, contact_phone, lat, lng } = req.body;
     try {
-        await pool.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET zone=$2', [name, zone]);
+        await pool.query(
+            `INSERT INTO locations (name, zone, billing_schedule, address, contact_name, contact_phone, lat, lng) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+             ON CONFLICT (name) DO UPDATE SET 
+             zone=$2, billing_schedule=$3, address=$4, contact_name=$5, contact_phone=$6, lat=$7, lng=$8`, 
+            [name, zone, billing_schedule || '', address || '', contact_name || '', contact_phone || '', lat || null, lng || null]
+        );
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -333,7 +353,13 @@ app.post('/api/import', async (req, res) => {
     }
     if (locations) {
       for (const l of locations) {
-        await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [l.name, l.zone || l.type]);
+        await client.query(
+          `INSERT INTO locations (name, zone, billing_schedule, address, contact_name, contact_phone, lat, lng) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+           ON CONFLICT (name) DO UPDATE SET 
+           zone=$2, billing_schedule=$3, address=$4, contact_name=$5, contact_phone=$6, lat=$7, lng=$8`, 
+          [l.name, l.zone || l.type, l.billing_schedule || '', l.address || '', l.contact_name || '', l.contact_phone || '', l.lat || null, l.lng || null]
+        );
       }
     }
     if (banks) {
