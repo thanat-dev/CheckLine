@@ -703,35 +703,45 @@ function updateLocationDatalistSettings() {
 }
 
 function autoFillLocationSettings() {
-  const name = document.getElementById('new-location').value.trim();
-  if (!name) return;
-
-  // 1. Check existing database records first (Priority)
-  const locs = getData(KEYS.locations);
-  const existing = locs.find(l => l.name === name);
+  const nameInput = document.getElementById('new-location');
+  const name = nameInput.value.trim();
+  const btn = document.getElementById('btn-save-location');
   
-  if (existing) {
-    if (existing.billing_schedule) document.getElementById('new-location-billing').value = existing.billing_schedule;
-    if (existing.address) document.getElementById('new-location-address').value = existing.address;
-    if (existing.contact_name) document.getElementById('new-location-contact').value = existing.contact_name;
-    if (existing.contact_phone) document.getElementById('new-location-phone').value = existing.contact_phone;
-    if (existing.lat) document.getElementById('new-location-lat').value = existing.lat;
-    if (existing.lng) document.getElementById('new-location-lng').value = existing.lng;
-    
-    // Update button text to indicate edit mode
-    document.getElementById('btn-save-location').textContent = 'บันทึกการแก้ไข';
+  if (!name) {
+    clearLocationFields();
     return;
   }
 
-  // 2. Check ZONE_MAP defaults
+  const locs = getData(KEYS.locations);
+  const existing = locs.find(l => l.name === name);
   const zData = getZoneData(name);
-  if (zData.lat && zData.lng) {
+  
+  // Reset fields first to avoid stale data from previous matches
+  document.getElementById('new-location-billing').value = '';
+  document.getElementById('new-location-address').value = '';
+  document.getElementById('new-location-contact').value = '';
+  document.getElementById('new-location-phone').value = '';
+  document.getElementById('new-location-lat').value = '';
+  document.getElementById('new-location-lng').value = '';
+  btn.textContent = '+ เพิ่ม';
+
+  if (existing) {
+    btn.textContent = 'บันทึกการแก้ไข';
+    // Fill with database values, fallback to ZONE_MAP if database has null/empty
+    document.getElementById('new-location-billing').value = existing.billing_schedule || zData.billing_schedule || '';
+    document.getElementById('new-location-address').value = existing.address || zData.address || '';
+    document.getElementById('new-location-contact').value = existing.contact_name || zData.contact_name || '';
+    document.getElementById('new-location-phone').value = existing.contact_phone || zData.contact_phone || '';
+    document.getElementById('new-location-lat').value = existing.lat || zData.lat || '';
+    document.getElementById('new-location-lng').value = existing.lng || zData.lng || '';
+  } else if (zData.lat && zData.lng) {
+    // New location but recognized in ZONE_MAP
     document.getElementById('new-location-lat').value = zData.lat;
     document.getElementById('new-location-lng').value = zData.lng;
-    if (zData.address) document.getElementById('new-location-address').value = zData.address;
-    if (zData.billing_schedule) document.getElementById('new-location-billing').value = zData.billing_schedule;
-    if (zData.contact_name) document.getElementById('new-location-contact').value = zData.contact_name;
-    if (zData.contact_phone) document.getElementById('new-location-phone').value = zData.contact_phone;
+    document.getElementById('new-location-address').value = zData.address || '';
+    document.getElementById('new-location-billing').value = zData.billing_schedule || '';
+    document.getElementById('new-location-contact').value = zData.contact_name || '';
+    document.getElementById('new-location-phone').value = zData.contact_phone || '';
   }
 }
 
