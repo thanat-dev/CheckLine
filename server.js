@@ -132,6 +132,25 @@ const initDb = async () => {
         await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, zone]);
       }
 
+      // Update specific details requested by user
+      await client.query(`
+        UPDATE locations 
+        SET billing_schedule = 'กำหนดการวางบิล 25 มี.ค.69' 
+        WHERE name = 'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม'
+      `);
+      await client.query(`
+        UPDATE locations 
+        SET billing_schedule = 'กำหนดการวางบิล ทุกวันพฤหัส' 
+        WHERE name = 'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)'
+      `);
+      await client.query(`
+        UPDATE locations 
+        SET address = 'สำนักงานอนามัย กรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ศาลาว่าการกรุงเทพมหานคร 2 (ดินแดง) ถ.มิตรไมตรี เขตดินแดง กทม.10400 http://www.bangkok.go.th/health',
+            contact_name = 'ป้อม',
+            contact_phone = '02-245-3088'
+        WHERE name = 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย'
+      `);
+
       // Seed sample deposits for today (13/03/2569) if the table is empty
       const depCheck = await client.query('SELECT COUNT(*) FROM deposits');
       if (parseInt(depCheck.rows[0].count) === 0) {
