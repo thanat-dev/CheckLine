@@ -132,28 +132,30 @@ const initDb = async () => {
         await client.query('INSERT INTO locations (name, zone) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, zone]);
       }
 
-      // Update specific details requested by user
-      await client.query(`
-        UPDATE locations 
-        SET billing_schedule = 'กำหนดการวางบิล 25 มี.ค.69' 
-        WHERE name = 'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม'
-      `);
-      await client.query(`
-        UPDATE locations 
-        SET billing_schedule = 'กำหนดการวางบิล ทุกวันพฤหัส' 
-        WHERE name = 'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)'
-      `);
-      await client.query(`
-        UPDATE locations 
-        SET address = 'สำนักงานอนามัย กรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ศาลาว่าการกรุงเทพมหานคร 2 (ดินแดง) ถ.มิตรไมตรี เขตดินแดง กทม.10400 http://www.bangkok.go.th/health',
-            contact_name = 'ป้อม',
-            contact_phone = '02-245-3088'
-        WHERE name = 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย'
-      `);
+    }
 
-      // Seed sample deposits for today (13/03/2569) if the table is empty
-      const depCheck = await client.query('SELECT COUNT(*) FROM deposits');
-      if (parseInt(depCheck.rows[0].count) === 0) {
+    // Update specific details requested by user (Moved outside if to ensure it runs even if table not empty)
+    await client.query(`
+      UPDATE locations 
+      SET billing_schedule = 'กำหนดการวางบิล 25 มี.ค.69' 
+      WHERE name = 'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม'
+    `);
+    await client.query(`
+      UPDATE locations 
+      SET billing_schedule = 'กำหนดการวางบิล ทุกวันพฤหัส' 
+      WHERE name = 'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)'
+    `);
+    await client.query(`
+      UPDATE locations 
+      SET address = 'สำนักงานอนามัย กรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ศาลาว่าการกรุงเทพมหานคร 2 (ดินแดง) ถ.มิตรไมตรี เขตดินแดง กทม.10400 http://www.bangkok.go.th/health',
+          contact_name = 'ป้อม',
+          contact_phone = '02-245-3088'
+      WHERE name = 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย'
+    `);
+
+    // Seed sample deposits for today (13/03/2569) if the table is empty
+    const depCheck = await client.query('SELECT COUNT(*) FROM deposits');
+    if (parseInt(depCheck.rows[0].count) === 0) {
         const todayStr = '2026-03-13'; // Database format YYYY-MM-DD
         const sampleDeps = [
           ['dep_seed_1', todayStr, 'ธนาคารกรุงไทย', 'สาขาพหลโยธิน', 5, 50000, 'งานประจำเช้า'],
@@ -166,11 +168,10 @@ const initDb = async () => {
             [id, date, bank, branch, count, total, notes]
           );
         }
-      }
-    }
+  }
 
-        console.log('Database initialized successfully');
-    } catch (err) {
+  console.log('Database initialized successfully');
+} catch (err) {
         console.error('Database initialization error:', err);
     } finally {
         client.release();
