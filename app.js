@@ -702,6 +702,39 @@ function updateLocationDatalistSettings() {
   dl.innerHTML = knownLocations.map(name => `<option value="${name}">`).join('');
 }
 
+function autoFillLocationSettings() {
+  const name = document.getElementById('new-location').value.trim();
+  if (!name) return;
+
+  // 1. Check existing database records first (Priority)
+  const locs = getData(KEYS.locations);
+  const existing = locs.find(l => l.name === name);
+  
+  if (existing) {
+    if (existing.billing_schedule) document.getElementById('new-location-billing').value = existing.billing_schedule;
+    if (existing.address) document.getElementById('new-location-address').value = existing.address;
+    if (existing.contact_name) document.getElementById('new-location-contact').value = existing.contact_name;
+    if (existing.contact_phone) document.getElementById('new-location-phone').value = existing.contact_phone;
+    if (existing.lat) document.getElementById('new-location-lat').value = existing.lat;
+    if (existing.lng) document.getElementById('new-location-lng').value = existing.lng;
+    
+    // Update button text to indicate edit mode
+    document.getElementById('btn-save-location').textContent = 'บันทึกการแก้ไข';
+    return;
+  }
+
+  // 2. Check ZONE_MAP defaults
+  const zData = getZoneData(name);
+  if (zData.lat && zData.lng) {
+    document.getElementById('new-location-lat').value = zData.lat;
+    document.getElementById('new-location-lng').value = zData.lng;
+    if (zData.address) document.getElementById('new-location-address').value = zData.address;
+    if (zData.billing_schedule) document.getElementById('new-location-billing').value = zData.billing_schedule;
+    if (zData.contact_name) document.getElementById('new-location-contact').value = zData.contact_name;
+    if (zData.contact_phone) document.getElementById('new-location-phone').value = zData.contact_phone;
+  }
+}
+
 // Auto-save settings on change
 document.addEventListener('change', async (e) => {
   if (e.target.id === 'setting-gas-url') {
