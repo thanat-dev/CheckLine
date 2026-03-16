@@ -300,8 +300,6 @@ function showCopyModal(text, lat = null, lng = null) {
   const mapIframe = document.getElementById('map-iframe');
   
   if (lat && lng && mapContainer && mapIframe) {
-    // URL for Google Maps with Traffic Layer enabled (?layer=t doesn't work in embed easily, but we use search with t=m)
-    // Actually, the most reliable embed for traffic is using the classic embed URL format
     const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=15&output=embed&layer=t`;
     mapIframe.src = embedUrl;
     mapContainer.style.display = 'block';
@@ -311,6 +309,13 @@ function showCopyModal(text, lat = null, lng = null) {
   }
   
   document.getElementById('modal-copy').classList.add('active');
+}
+
+function viewLocationMap(name, lat, lng) {
+  document.getElementById('view-map-title').textContent = '🗺️ ' + name;
+  const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=16&output=embed&layer=t`;
+  document.getElementById('view-map-iframe').src = embedUrl;
+  openModal('view-map');
 }
 
 async function copyToClipboard() {
@@ -446,7 +451,7 @@ function renderCollections() {
           <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
           <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
           <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
-          ${lat ? `<button class="btn btn-ghost btn-sm" onclick="map.setView([${lat}, ${lng}], 16)">🗺️</button>` : ''}
+          ${lat ? `<button class="btn btn-ghost btn-sm" onclick="viewLocationMap('${c.location.replace(/'/g, "\\'")}', ${lat}, ${lng})">🗺️</button>` : ''}
         </div></td></tr>`;
     });
   });
@@ -588,7 +593,7 @@ function renderDashboard() {
     const lat = r.lat || zData.lat;
     const lng = r.lng || zData.lng;
     const distanceHtml = lat ? `<br><small style="color:var(--accent-primary)">📏 ${calculateDistance(BASE_LAT, BASE_LNG, lat, lng).toFixed(2)} กม.</small>` : '';
-    const mapBtn = lat ? `<button class="btn btn-ghost btn-sm" onclick="map.setView([${lat}, ${lng}], 16)" style="padding:2px 5px; margin-left:5px">🗺️</button>` : '';
+    const mapBtn = lat ? `<button class="btn btn-ghost btn-sm" onclick="viewLocationMap('${r._name.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="padding:2px 5px; margin-left:5px">🗺️</button>` : '';
 
     return `<tr>
       <td data-label="วันที่">${fmtDate(r.date)}</td>
