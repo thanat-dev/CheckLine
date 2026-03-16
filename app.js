@@ -441,7 +441,12 @@ async function saveCollection(e) {
 
   if (editId) {
     const existing = getData('cl_collections').find(c => c.id === editId);
-    if (existing) Object.assign(item, existing, { location: locationName, lat: item.lat, lng: item.lng });
+    if (existing) Object.assign(item, existing, { 
+      location: locationName, 
+      lat: item.lat, 
+      lng: item.lng,
+      date: today() // Bump to today on every save/edit
+    });
   }
 
   await saveItem('collection', item);
@@ -564,7 +569,10 @@ async function saveDeposit(e) {
 
   if (editId) {
     const existing = getData('cl_deposits').find(d => d.id === editId);
-    if (existing) Object.assign(item, existing, { bank: item.bank });
+    if (existing) Object.assign(item, existing, { 
+      bank: item.bank,
+      date: today() // Bump to today on every save/edit
+    });
   }
 
   await saveItem('deposit', item);
