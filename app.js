@@ -311,11 +311,31 @@ function showCopyModal(text, lat = null, lng = null) {
   document.getElementById('modal-copy').classList.add('active');
 }
 
-function viewLocationMap(name, lat, lng) {
-  document.getElementById('view-map-title').textContent = '🗺️ ' + name;
-  const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=16&output=embed&layer=t`;
-  document.getElementById('view-map-iframe').src = embedUrl;
-  openModal('view-map');
+function toggleInlineMap(rowId, name, lat, lng) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+
+  const nextRow = row.nextElementSibling;
+  const isMapOpen = nextRow && nextRow.classList.contains('inline-map-row');
+
+  // Close any existing inline maps first
+  document.querySelectorAll('.inline-map-row').forEach(r => r.remove());
+
+  if (!isMapOpen) {
+    const mapRow = document.createElement('tr');
+    mapRow.className = 'inline-map-row';
+    const cellCount = row.cells.length;
+    const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=16&output=embed&layer=t`;
+    
+    mapRow.innerHTML = `
+      <td colspan="${cellCount}" style="padding: 0;">
+        <div style="height: 300px; border-bottom: 2px solid var(--accent-primary); overflow: hidden; animation: slideDown 0.3s ease-out;">
+          <iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe>
+        </div>
+      </td>
+    `;
+    row.parentNode.insertBefore(mapRow, nextRow);
+  }
 }
 
 async function copyToClipboard() {
@@ -439,7 +459,8 @@ function renderCollections() {
       const lat = c.lat || zData.lat;
       const lng = c.lng || zData.lng;
       
-      html += `<tr>
+      const rowId = `row-col-${c.id}`;
+      html += `<tr id="${rowId}">
         <td data-label="วันที่">${fmtDate(c.date)}</td>
         <td data-label="สถานที่">
           <strong>${c.location}</strong>
@@ -451,7 +472,7 @@ function renderCollections() {
           <button class="btn btn-ghost btn-sm" onclick="editCollection('${c.id}')">✏️</button>
           <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${c.id}','collection')">🔄</button>
           <button class="btn btn-ghost btn-sm" onclick="deleteItem('${c.id}','collection')">🗑️</button>
-          ${lat ? `<button class="btn btn-ghost btn-sm" onclick="viewLocationMap('${c.location.replace(/'/g, "\\'")}', ${lat}, ${lng})">🗺️</button>` : ''}
+          ${lat ? `<button class="btn btn-ghost btn-sm" onclick="toggleInlineMap('${rowId}', '${c.location.replace(/'/g, "\\'")}', ${lat}, ${lng})">🗺️</button>` : ''}
         </div></td></tr>`;
     });
   });
@@ -588,14 +609,15 @@ function renderDashboard() {
   if (!tbody) return;
   if (!recent.length) { tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
-  tbody.innerHTML = recent.map(r => {
+  tbody.innerHTML = recent.map((r, index) => {
     const zData = getZoneData(r._name);
     const lat = r.lat || zData.lat;
     const lng = r.lng || zData.lng;
     const distanceHtml = lat ? `<br><small style="color:var(--accent-primary)">📏 ${calculateDistance(BASE_LAT, BASE_LNG, lat, lng).toFixed(2)} กม.</small>` : '';
-    const mapBtn = lat ? `<button class="btn btn-ghost btn-sm" onclick="viewLocationMap('${r._name.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="padding:2px 5px; margin-left:5px">🗺️</button>` : '';
+    const rowId = `row-dash-${r.id || 'idx'+index}`;
+    const mapBtn = lat ? `<button class="btn btn-ghost btn-sm" onclick="toggleInlineMap('${rowId}', '${r._name.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="padding:2px 5px; margin-left:5px">🗺️</button>` : '';
 
-    return `<tr>
+    return `<tr id="${rowId}">
       <td data-label="วันที่">${fmtDate(r.date)}</td>
       <td data-label="งาน">
         <strong>${r._name}</strong>${distanceHtml}
