@@ -208,6 +208,9 @@ function initMap() {
       shadowSize: [41, 41]
     })
   }).addTo(map).bindPopup(`<b>${BASE_NAME} (ต้นทาง)</b>`);
+  
+  // Plot existing markers
+  updateMapMarkers();
 }
 
 function updateMapMarkers() {
@@ -220,7 +223,15 @@ function updateMapMarkers() {
 
   const all = [
     ...cols.map(c => ({ name: c.location, type: '📍 รับเช็ค', lat: c.lat, lng: c.lng })),
-    ...deps.map(d => ({ name: d.bank, type: '🏦 ฝากเช็ค' }))
+    ...deps.map(d => {
+      const locInfo = getData(KEYS.locations).find(l => l.name === d.bank);
+      return { 
+        name: d.bank, 
+        type: '🏦 ฝากเช็ค', 
+        lat: d.lat || locInfo?.lat, 
+        lng: d.lng || locInfo?.lng 
+      };
+    })
   ];
 
   all.forEach(item => {
