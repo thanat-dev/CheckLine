@@ -13,6 +13,7 @@ let _state = {
 // Map variables
 let map;
 let markers = [];
+let inlineMaps = {}; // Track inline leaflet instances
 const BASE_LAT = 13.708991;
 const BASE_LNG = 100.587533;
 const BASE_NAME = 'โรงงานเภสัชกรรมทหาร';
@@ -318,23 +319,47 @@ function toggleInlineMap(rowId, name, lat, lng) {
   const nextRow = row.nextElementSibling;
   const isMapOpen = nextRow && nextRow.classList.contains('inline-map-row');
 
-  // Close any existing inline maps first
+  // Close and clean up any existing inline maps
+  Object.keys(inlineMaps).forEach(id => {
+    if (inlineMaps[id]) {
+      inlineMaps[id].remove();
+      delete inlineMaps[id];
+    }
+  });
   document.querySelectorAll('.inline-map-row').forEach(r => r.remove());
 
   if (!isMapOpen) {
     const mapRow = document.createElement('tr');
     mapRow.className = 'inline-map-row';
     const cellCount = row.cells.length;
-    const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=16&output=embed&layer=t`;
+    const mapDivId = `map-container-${rowId}`;
     
     mapRow.innerHTML = `
       <td colspan="${cellCount}" style="padding: 0;">
-        <div style="height: 300px; border-bottom: 2px solid var(--accent-primary); overflow: hidden; animation: slideDown 0.3s ease-out;">
-          <iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe>
-        </div>
+        <div id="${mapDivId}" style="height: 300px; border-bottom: 2px solid var(--accent-primary); animation: slideDown 0.3s ease-out;"></div>
       </td>
     `;
     row.parentNode.insertBefore(mapRow, nextRow);
+
+    // Initialize Leaflet for this specific row
+    const iMap = L.map(mapDivId).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(iMap);
+
+    // Destination Marker
+    L.marker([lat, lng]).addTo(iMap).bindPopup(`<b>${name}</b>`).openPopup();
+
+    // Base Marker (Small/Different color for reference)
+    L.marker([BASE_LAT, BASE_LNG], {
+      icon: L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        iconSize: [20, 32],
+        iconAnchor: [10, 32]
+      })
+    }).addTo(iMap).bindPopup(`<b>${BASE_NAME} (ต้นทาง)</b>`);
+
+    inlineMaps[rowId] = iMap;
   }
 }
 
