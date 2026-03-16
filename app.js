@@ -129,9 +129,17 @@ const ZONE_MAP = {
   'องค์การเภสัชกรรม สำนักงานใหญ่': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.759, lng: 100.528 },
   'โรงพยาบาลทหารผ่านศึก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.7721515, lng: 100.5518272 },
 
-  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.7434319, lng: 100.5378094 },
-  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.725, lng: 100.530 },
-  'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.730, lng: 100.550 },
+  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.7434319, lng: 100.5378094, billing_schedule: 'กำหนดการวางบิล ทุกวันพฤหัส' },
+  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.725, lng: 100.530, billing_schedule: 'กำหนดการวางบิล 25 มี.ค.69' },
+  'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย': { 
+    zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', 
+    order: 2, 
+    lat: 13.730, 
+    lng: 100.550, 
+    address: 'สำนักงานอนามัย กรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ศาลาว่าการกรุงเทพมหานคร 2 (ดินแดง) ถ.มิตรไมตรี เขตดินแดง กทม.10400 http://www.bangkok.go.th/health',
+    contact_name: 'ป้อม',
+    contact_phone: '02-245-3088'
+  },
 
   'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.746389, lng: 100.509444 },
   'กรมแผนที่ทหาร': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.754, lng: 100.493 },
@@ -621,6 +629,14 @@ function renderSettings() {
   if (settings.gasUrl) document.getElementById('setting-gas-url').value = settings.gasUrl;
   renderLocationTags();
   renderBankTags();
+  updateLocationDatalistSettings();
+}
+
+function updateLocationDatalistSettings() {
+  const dl = document.getElementById('location-datalist');
+  if (!dl) return;
+  const knownLocations = Object.keys(ZONE_MAP);
+  dl.innerHTML = knownLocations.map(name => `<option value="${name}">`).join('');
 }
 
 // Auto-save settings on change
@@ -687,6 +703,30 @@ function editLocationSetting(name) {
   
   document.getElementById('btn-save-location').textContent = '💾 บันทึกการแก้ไข';
   document.getElementById('new-location').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function autoFillLocationSettings() {
+  const name = document.getElementById('new-location').value.trim();
+  if (!name) return;
+
+  // Check if it's in ZONE_MAP
+  const zData = getZoneData(name);
+  if (zData && zData.lat) {
+    if (zData.lat) document.getElementById('new-location-lat').value = zData.lat;
+    if (zData.lng) document.getElementById('new-location-lng').value = zData.lng;
+    if (zData.billing_schedule) document.getElementById('new-location-billing').value = zData.billing_schedule;
+    if (zData.address) document.getElementById('new-location-address').value = zData.address;
+    if (zData.contact_name) document.getElementById('new-location-contact').value = zData.contact_name;
+    if (zData.contact_phone) document.getElementById('new-location-phone').value = zData.contact_phone;
+    
+    // If it's a prefix match (user still typing), we don't change button text,
+    // but if it's a full match, we might want to alert them it's already known.
+    const exactMatch = Object.keys(ZONE_MAP).find(k => k === name);
+    if (exactMatch) {
+       // Optional: toggle button text if they want to edit existing?
+       // But existing locs might be in DB, so we handle it in addLocation
+    }
+  }
 }
 
 async function removeLocation(name) {

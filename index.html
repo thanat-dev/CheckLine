@@ -218,7 +218,8 @@
     <div class="card" style="margin-bottom:20px">
       <div class="section-title">📍 จัดการสถานที่</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" class="form-input" id="new-location" placeholder="เพิ่มสถานที่ใหม่...">
+        <input type="text" class="form-input" id="new-location" placeholder="เพิ่มสถานที่ใหม่..." oninput="autoFillLocationSettings()" list="location-datalist">
+        <datalist id="location-datalist"></datalist>
         <select class="form-select" id="new-location-type" style="width:auto">
           <option value="hospital">🏥 โรงพยาบาล</option>
           <option value="government">🏛️ สถานที่ราชการ</option>
