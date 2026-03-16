@@ -122,59 +122,77 @@ async function removeBankApi(name) {
 // Default data
 // Final coordinates for ZONE_MAP
 const ZONE_MAP = {
-  'โรงพยาบาลพระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 },
-  'สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 }, // Same as PMK
-  'บริษัท พีเอ็มเควิทยาเวช จำกัด (ร้านยาสิรินธรโอสถ รพ.พระมงกุฎ)': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325 },
-  'สถาบันวิจัยวิทยาศาสตร์การแพทย์ทหาร': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.765, lng: 100.532 },
-  'กองคลังแพทย์ กรมแพทย์ทหารบก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.766, lng: 100.533 },
-  'องค์การเภสัชกรรม สำนักงานใหญ่': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.759, lng: 100.528 },
-  'โรงพยาบาลทหารผ่านศึก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.7721515, lng: 100.5518272 },
+  'โรงพยาบาลพระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325, address: '315 ถ.ราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400', contact_name: 'กองการเงิน' },
+  'สถาบันพยาธิวิทยา ศูนย์อำนวยการแพทย์พระมงกุฎเกล้า': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325, address: '315 ถ.ราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400' },
+  'บริษัท พีเอ็มเควิทยาเวช จำกัด (ร้านยาสิรินธรโอสถ รพ.พระมงกุฎ)': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.768611, lng: 100.5325, address: '315 ถ.ราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400' },
+  'สถาบันวิจัยวิทยาศาสตร์การแพทย์ทหาร': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.765, lng: 100.532, address: 'ถ.ราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพฯ' },
+  'กองคลังแพทย์ กรมแพทย์ทหารบก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.766, lng: 100.533, address: 'พญาไท กรุงเทพฯ' },
+  'องค์การเภสัชกรรม สำนักงานใหญ่': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.759, lng: 100.528, address: '75/1 ถ.พระรามที่ 6 แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400', contact_name: 'ฝ่ายบัญชี' },
+  'โรงพยาบาลทหารผ่านศึก': { zone: 'Zone 1: พญาไท / พระราม 6', order: 1, lat: 13.7721515, lng: 100.5518272, address: '123 ถ.วิภาวดีรังสิต แขวงสามเสนใน เขตพญาไท กรุงเทพมหานคร 10400' },
 
-  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.7434319, lng: 100.5378094, billing_schedule: 'กำหนดการวางบิล ทุกวันพฤหัส' },
-  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.725, lng: 100.530, billing_schedule: 'กำหนดการวางบิล 25 มี.ค.69' },
+  'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.7434319, lng: 100.5378094, address: '492/1 ถ.พระรามที่ 1 แขวงปทุมวัน เขตปทุมวัน กรุงเทพมหานคร 10330', billing_schedule: 'กำหนดการวางบิล ทุกวันพฤหัส' },
+  'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม': { zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', order: 2, lat: 13.725, lng: 100.530, address: 'เลขที่ 2 ถ.คอนแวนต์ แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500', billing_schedule: 'กำหนดการวางบิล 25 มี.ค.69' },
   'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย': { 
     zone: 'Zone 5: ปทุมวัน / สีลม / ดินแดง', 
     order: 2, 
     lat: 13.7703, 
     lng: 100.5537, 
-    address: 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย - สถานที่ : ศาลาว่าการกรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ถ.มิตรไมตรี เขตดินแดง กทม.10400',
+    address: 'ศาลาว่าการกรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ถ.มิตรไมตรี เขตดินแดง กทม.10400',
     contact_name: 'ป้อม',
     contact_phone: '02-245-3088'
   },
 
-  'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.746389, lng: 100.509444 },
-  'กรมแผนที่ทหาร': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.754, lng: 100.493 },
-  'มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.755, lng: 100.500 },
-  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.762, lng: 100.512 },
+  'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.746389, lng: 100.509444, address: '514 ถ.หลวง แขวงป้อมปราบ เขตป้อมปราบศัตรูพ่าย กรุงเทพมหานคร 10100' },
+  'กรมแผนที่ทหาร': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.754, lng: 100.493, address: 'ถ.กัลยาณไมตรี แขวงพระบรมมหาราชวัง เขตพระนคร กรุงเททพฯ' },
+  'มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.7550, lng: 100.5000, address: '606 ถ.เกื้อกูล แขวงวัดโสมนัส เขตป้อมปราบศัตรูพ่าย กรุงเทพมหานคร 10100' },
+  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.762, lng: 100.512, address: 'สวนจิตรลดา กรุงเทพฯ' },
 
-  'โรงพยาบาลวิภาวดี (กรุงเทพฯ)': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.846431, lng: 100.56252 },
-  'โรงเรียนช่างฝีมือทหาร สถาบันวิชาการป้องกันประเทศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.825, lng: 100.565 },
-  'ทัณฑสถานโรงพยาบาลราชทัณฑ์': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.845, lng: 100.548 },
-  'แผนกแพทย์ กองบริหาร กรมช่างอากาศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.805, lng: 100.525 },
-  'การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.808, lng: 100.505 },
-  'กรมการแพทย์ กระทรวงสาธารณสุข': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.850, lng: 100.528 },
+  'โรงพยาบาลวิภาวดี (กรุงเทพฯ)': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.846431, lng: 100.56252, address: '51/3 ถ.งามวงศ์วาน แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900' },
+  'โรงเรียนช่างฝีมือทหาร สถาบันวิชาการป้องกันประเทศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.825, lng: 100.565, address: 'แขวงจตุจักร เขตจตุจักร กรุงเทพฯ' },
+  'ทัณฑสถานโรงพยาบาลราชทัณฑ์': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.845, lng: 100.548, address: 'ถ.งามวงศ์วาน แขวงลาดยาว เขตจตุจักร กรุงเทพฯ' },
+  'แผนกแพทย์ กองบริหาร กรมช่างอากาศ': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.805, lng: 100.525, address: 'พหลโยธิน กรุงเทพฯ' },
+  'การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.808, lng: 100.505, address: 'บางกรวย นนทบุรี' },
+  'กรมการแพทย์ กระทรวงสาธารณสุข': { zone: 'Zone 3: จตุจักร / นนทบุรี', order: 4, lat: 13.850, lng: 100.528, address: 'นนทบุรี' },
 
-  'โรงพยาบาลภูมิพลอดุลยเดช': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.908889, lng: 100.618056 },
-  'กรมแพทย์ทหารอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.910, lng: 100.620 },
-  'สถาบันเวชศาสตร์การบิน กองทัพอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.912, lng: 100.622 },
-  'โรงพยาบาลทหารอากาศ (สีกัน)': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.925, lng: 100.595 },
-  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.875, lng: 100.585 },
-  'สสน.นทพ.': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.880, lng: 100.590 },
+  'โรงพยาบาลภูมิพลอดุลยเดช': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.908889, lng: 100.618056, address: '171 ถ.พหลโยธิน แขวงคลองถนน เขตสายไหม กรุงเทพมหานคร 10220' },
+  'กรมแพทย์ทหารอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.910, lng: 100.620, address: 'สายไหม กรุงเทพฯ' },
+  'สถาบันเวชศาสตร์การบิน กองทัพอากาศ': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.912, lng: 100.622, address: 'สายไหม กรุงเทพฯ' },
+  'โรงพยาบาลทหารอากาศ (สีกัน)': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.925, lng: 100.595, address: 'ดอนเมือง กรุงเทพฯ' },
+  'ศูนย์รักษาความปลอดภัย กองบัญชาการกองทัพไทย': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.875, lng: 100.585, address: 'แขวงอนุสาวรีย์ เขตบางเขน กรุงเทพฯ' },
+  'สสน.นทพ.': { zone: 'Zone 2: ดอนเมือง / สายไหม', order: 5, lat: 13.880, lng: 100.590, address: 'ดอนเมือง กรุงเทพฯ' },
 
-  'โรงพยาบาลสมเด็จพระปิ่นเกล้า': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.71, lng: 100.486944 },
-  'กรมแพทย์ทหารเรือ': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.712, lng: 100.488 },
+  'โรงพยาบาลสมเด็จพระปิ่นเกล้า': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.71, lng: 100.486944, address: 'ถ.สมเด็จพระเจ้าตากสิน แขวงบุคคโล เขตธนบุรี กรุงเทพฯ' },
+  'กรมแพทย์ทหารเรือ': { zone: 'Zone 6: ฝั่งธนบุรี', order: 6, lat: 13.712, lng: 100.488, address: 'เขตธนบุรี กรุงเทพฯ' },
 
-  'การกีฬาแห่งประเทศไทย': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.755, lng: 100.622 },
-  'บริษัท กรุงเทพดรักสโตร์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.760, lng: 100.630 },
-  'โรงพยาบาลทหารเรือกรุงเทพ': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.675, lng: 100.600 },
-  'บริษัท สินแพทย์ เทพารักษ์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.620, lng: 100.635 }
+  'การกีฬาแห่งประเทศไทย': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.755, lng: 100.622, address: '286 ถ.รามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพมหานคร 10240' },
+  'บริษัท กรุงเทพดรักสโตร์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.760, lng: 100.630, address: 'แขวงพลับพลา เขตวังทองหลาง กรุงเทพฯ' },
+  'โรงพยาบาลทหารเรือกรุงเทพ': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.675, lng: 100.600, address: 'ถ.สรรพาวุธ แขวงบางนา เขตบางนา กรุงเทพฯ' },
+  'บริษัท สินแพทย์ เทพารักษ์ จำกัด': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.620, lng: 100.635, address: 'เลขที่ 9/9 ถ.เทพารักษ์ ต.เทพารักษ์ อ.เมือง จ.สมุทรปราการ' }
 };
 
 function getZoneData(locationName) {
+  const name = (locationName || '').trim();
   for (const [key, data] of Object.entries(ZONE_MAP)) {
-    if (locationName.includes(key) || key.includes(locationName)) return data;
+    if (name.includes(key) || key.includes(name)) {
+      return {
+        ...data,
+        billing_schedule: data.billing_schedule || '',
+        address: data.address || '',
+        contact_name: data.contact_name || '',
+        contact_phone: data.contact_phone || ''
+      };
+    }
   }
-  return { zone: 'อื่นๆ / ไม่ระบุโซน', order: 99 };
+  return { 
+    zone: 'อื่นๆ / ไม่ระบุโซน', 
+    order: 99, 
+    billing_schedule: '', 
+    address: '', 
+    contact_name: '', 
+    contact_phone: '',
+    lat: '',
+    lng: ''
+  };
 }
 
 function getZone(locationName) {
@@ -713,10 +731,10 @@ function autoFillLocationSettings() {
   }
 
   const locs = getData(KEYS.locations);
-  const existing = locs.find(l => l.name === name);
+  const existing = locs.find(l => l.name.trim().toLowerCase() === name.toLowerCase());
   const zData = getZoneData(name);
   
-  // Reset fields first to avoid stale data from previous matches
+  // Clear fields first (reset state)
   document.getElementById('new-location-billing').value = '';
   document.getElementById('new-location-address').value = '';
   document.getElementById('new-location-contact').value = '';
@@ -727,17 +745,19 @@ function autoFillLocationSettings() {
 
   if (existing) {
     btn.textContent = 'บันทึกการแก้ไข';
-    // Fill with database values, fallback to ZONE_MAP if database has null/empty
-    document.getElementById('new-location-billing').value = existing.billing_schedule || zData.billing_schedule || '';
-    document.getElementById('new-location-address').value = existing.address || zData.address || '';
-    document.getElementById('new-location-contact').value = existing.contact_name || zData.contact_name || '';
-    document.getElementById('new-location-phone').value = existing.contact_phone || zData.contact_phone || '';
+    // Prioritize existing but fallback to ZData defaults if existing has empty/null
+    const getVal = (field) => existing[field] && existing[field].toString().trim() !== '' ? existing[field] : (zData[field] || '');
+    
+    document.getElementById('new-location-billing').value = getVal('billing_schedule');
+    document.getElementById('new-location-address').value = getVal('address');
+    document.getElementById('new-location-contact').value = getVal('contact_name');
+    document.getElementById('new-location-phone').value = getVal('contact_phone');
     document.getElementById('new-location-lat').value = existing.lat || zData.lat || '';
     document.getElementById('new-location-lng').value = existing.lng || zData.lng || '';
   } else if (zData.lat && zData.lng) {
-    // New location but recognized in ZONE_MAP
-    document.getElementById('new-location-lat').value = zData.lat;
-    document.getElementById('new-location-lng').value = zData.lng;
+    // Recognize from Zone map defaults
+    document.getElementById('new-location-lat').value = zData.lat || '';
+    document.getElementById('new-location-lng').value = zData.lng || '';
     document.getElementById('new-location-address').value = zData.address || '';
     document.getElementById('new-location-billing').value = zData.billing_schedule || '';
     document.getElementById('new-location-contact').value = zData.contact_name || '';
