@@ -619,6 +619,11 @@ async function cycleStatus(id, type) {
   const states = type === 'collection' ? ['pending', 'traveling', 'completed', 'cancelled'] : ['pending', 'completed', 'cancelled'];
   const idx = states.indexOf(item.status);
   item.status = states[(idx + 1) % states.length];
+  
+  // Set date to today when completed
+  if (item.status === 'completed') {
+    item.date = new Date().toISOString().split('T')[0];
+  }
 
   await saveItem(type, item);
   toast(`สถานะเปลี่ยนเป็น: ${STATUS_MAP[item.status].label}`);
