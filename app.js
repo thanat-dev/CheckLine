@@ -635,6 +635,7 @@ document.addEventListener('change', async (e) => {
 
 async function addLocation() {
   const name = document.getElementById('new-location').value.trim();
+  const type = document.getElementById('new-location-type').value;
   const billing = document.getElementById('new-location-billing').value.trim();
   const address = document.getElementById('new-location-address').value.trim();
   const contact = document.getElementById('new-location-contact').value.trim();
@@ -643,9 +644,7 @@ async function addLocation() {
   const lngValue = document.getElementById('new-location-lng').value;
   
   if (!name) return;
-  const locs = getData('cl_locations');
-  if (locs.find(l => l.name === name)) { toast('สถานที่นี้มีอยู่แล้ว', 'error'); return; }
-
+  
   const zoneData = getZoneData(name);
   await addLocationApi({ 
     name, 
@@ -658,6 +657,12 @@ async function addLocation() {
     lng: lngValue ? parseFloat(lngValue) : zoneData.lng
   });
   
+  clearLocationFields();
+  await syncData();
+  toast('บันทึกข้อมูลสถานที่สำเร็จ');
+}
+
+function clearLocationFields() {
   document.getElementById('new-location').value = '';
   document.getElementById('new-location-billing').value = '';
   document.getElementById('new-location-address').value = '';
@@ -665,8 +670,23 @@ async function addLocation() {
   document.getElementById('new-location-phone').value = '';
   document.getElementById('new-location-lat').value = '';
   document.getElementById('new-location-lng').value = '';
-  await syncData();
-  toast('เพิ่มสถานที่สำเร็จ');
+  document.getElementById('btn-save-location').textContent = '+ เพิ่ม';
+}
+
+function editLocationSetting(name) {
+  const loc = getData('cl_locations').find(l => l.name === name);
+  if (!loc) return;
+
+  document.getElementById('new-location').value = loc.name;
+  document.getElementById('new-location-billing').value = loc.billing_schedule || '';
+  document.getElementById('new-location-address').value = loc.address || '';
+  document.getElementById('new-location-contact').value = loc.contact_name || '';
+  document.getElementById('new-location-phone').value = loc.contact_phone || '';
+  document.getElementById('new-location-lat').value = loc.lat || '';
+  document.getElementById('new-location-lng').value = loc.lng || '';
+  
+  document.getElementById('btn-save-location').textContent = '💾 บันทึกการแก้ไข';
+  document.getElementById('new-location').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function removeLocation(name) {
@@ -678,7 +698,7 @@ async function removeLocation(name) {
 function renderLocationTags() {
   const c = document.getElementById('locations-tags');
   const locs = getData('cl_locations');
-  c.innerHTML = locs.map(l => `<span class="tag">📌 ${l.name} <span class="tag-remove" onclick="removeLocation('${l.name}')">✕</span></span>`).join('');
+  c.innerHTML = locs.map(l => `<span class="tag" style="cursor:pointer" onclick="editLocationSetting('${l.name}')">📌 ${l.name} <span class="tag-remove" onclick="event.stopPropagation(); removeLocation('${l.name}')">✕</span></span>`).join('');
 }
 
 async function addBank() {
