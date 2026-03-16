@@ -643,6 +643,29 @@ async function cycleStatus(id, type) {
   }
 }
 
+async function movePendingToToday() {
+  if (!confirm('ต้องการเปลี่ยนวันที่ของงานที่ค้างอยู่ทั้งหมดให้เป็นวันนี้?')) return;
+  const t = today();
+  const cols = getData(KEYS.collections).filter(c => (c.status === 'pending' || c.status === 'traveling') && c.date !== t);
+  const deps = getData(KEYS.deposits).filter(d => d.status === 'pending' && d.date !== t);
+  
+  if (cols.length === 0 && deps.length === 0) return;
+
+  toast('กำลังย้ายงานค้าง...', 'info');
+  
+  for (const c of cols) {
+    c.date = t;
+    await saveItem('collection', c);
+  }
+  for (const d of deps) {
+    d.date = t;
+    await saveItem('deposit', d);
+  }
+  
+  toast('ย้ายงานค้างมาเป็นวันนี้แล้ว');
+  await syncData();
+}
+
 async function deleteItem(id, type) {
   if (!confirm('ต้องการลบรายการนี้?')) return;
   await deleteItemApi(id, type);
@@ -656,6 +679,14 @@ function renderDashboard() {
   const deps = getData(KEYS.deposits);
   const now = new Date();
   const thisMonth = now.toISOString().slice(0, 7);
+
+  const todayVal = today();
+  const pendingOld = [
+    ...cols.filter(c => (c.status === 'pending' || c.status === 'traveling') && c.date !== todayVal),
+    ...deps.filter(d => d.status === 'pending' && d.date !== todayVal)
+  ];
+  const moveBtn = document.getElementById('move-pending-btn');
+  if (moveBtn) moveBtn.style.display = pendingOld.length > 0 ? 'block' : 'none';
 
   document.getElementById('stat-pending-col').textContent = cols.filter(c => c.status === 'pending' || c.status === 'traveling').length;
   document.getElementById('stat-pending-dep').textContent = deps.filter(d => d.status === 'pending').length;

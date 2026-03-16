@@ -107,7 +107,10 @@
     </div>
 
     <div class="card" style="margin-bottom:20px">
-      <div class="section-title">📋 รายการงานวันนี้ทั้งหมด</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-right:15px">
+        <div class="section-title">📋 รายการงานวันนี้ทั้งหมด</div>
+        <button id="move-pending-btn" class="btn btn-ghost btn-sm" onclick="movePendingToToday()" style="display:none; color:var(--accent-primary); font-weight:bold; font-size:0.85rem">🔄 ดึงงานค้างมาวันนี้</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
