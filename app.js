@@ -171,9 +171,10 @@ const ZONE_MAP = {
 };
 
 function getZoneData(locationName) {
-  const name = (locationName || '').trim();
+  const name = (locationName || '').trim().toLowerCase();
   for (const [key, data] of Object.entries(ZONE_MAP)) {
-    if (name.includes(key) || key.includes(name)) {
+    const keyLower = key.toLowerCase();
+    if (name.includes(keyLower) || keyLower.includes(name)) {
       return {
         ...data,
         billing_schedule: data.billing_schedule || '',
