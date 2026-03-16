@@ -628,9 +628,9 @@ async function cycleStatus(id, type) {
   const idx = states.indexOf(item.status);
   item.status = states[(idx + 1) % states.length];
   
-  // Set date to today when completed
-  if (item.status === 'completed') {
-    item.date = new Date().toISOString().split('T')[0];
+  // Set date to today when traveling or completed
+  if (item.status === 'completed' || item.status === 'traveling') {
+    item.date = today();
   }
 
   await saveItem(type, item);
