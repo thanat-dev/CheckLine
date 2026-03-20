@@ -1323,12 +1323,14 @@ async function renderTodayPlan(useRoad = false) {
   // Stops
   for (let i = 0; i < _state.todayPlan.length; i++) {
     const task = _state.todayPlan[i];
+    if (!task) continue; // Safety check
+    
     html += `
       <div class="itinerary-stop">
         <div class="itinerary-dot itinerary-dot-stop">${i+1}</div>
         <div style="flex:1">
-          <div style="font-weight:600">${task._label}</div>
-          <div style="font-size:0.75rem; color:var(--text-dim)">${task._zone}</div>
+          <div style="font-weight:600">${task._label || 'ไม่มีชื่อสถานที่'}</div>
+          <div style="font-size:0.75rem; color:var(--text-dim)">${task._zone || ''}</div>
         </div>
         <div style="display:flex; gap:5px">
           <button class="btn btn-ghost btn-sm" onclick="openInGoogleMaps(${i})" title="นำทางด้วย Google Maps" style="padding:0; width:32px; height:32px; border-radius:8px; min-width:auto; border:1px solid var(--glass-border); color:var(--info)">📍</button>
@@ -1338,9 +1340,10 @@ async function renderTodayPlan(useRoad = false) {
     `;
 
     // Step to next OR to End
+    const dist = roadDistances[i+1] || 0;
     html += `
       <div class="itinerary-step">
-        🚗 ${roadDistances[i+1].toFixed(2)} กม. ${usingRoad ? '🛣️' : '📏'}
+        🚗 ${dist.toFixed(2)} กม. ${usingRoad ? '🛣️' : '📏'}
       </div>
     `;
   }
@@ -1428,51 +1431,15 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
 
   const group = new L.featureGroup(todayPlanMarkers);
   if (todayPlanMarkers.length > 0) {
-    todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+    try {
+      todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+    } catch (e) { console.error('Map bounds error:', e); }
   }
-  setTimeout(() => todayPlanMap.invalidateSize(), 300);
+  setTimeout(() => { if (todayPlanMap) todayPlanMap.invalidateSize(); }, 300);
 }
 
-async function optimizeTodayPlan() {
-  if (_state.todayPlan.length < 2) return;
-  
-  toast('กำลังคำนวณลำดับการเดินทางที่เหมาะสมที่สุด...', 'info');
-  
-  const points = [[BASE_LAT, BASE_LNG]];
-  _state.todayPlan.forEach(t => {
-    const loc = getZoneData(t.location || t._label);
-    points.push([t.lat || loc.lat, t.lng || loc.lng]);
-  });
+// Remove the old/duplicate optimizeTodayPlan that was here (lines 1436-1475)
 
-  const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
-  const url = `https://router.project-osrm.org/trip/v1/driving/${coordsStr}?source=first&roundtrip=true&overview=full&geometries=geojson`;
-  
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    
-    if (data.code === 'Ok' && data.waypoints) {
-      // OSRM Trip returns waypoints in the optimized order
-      // waypoints[i].waypoint_index is the original index in coordinates string
-      // waypoints[0] is source (factory)
-      
-      const optimizedOrder = data.waypoints
-        .sort((a, b) => a.trips_index - b.trips_index)
-        .map(wp => wp.waypoint_index)
-        .filter(idx => idx !== 0); // Remove factory index (0)
-        
-      const newPlan = optimizedOrder.map(oldIdx => _state.todayPlan[oldIdx - 1]);
-      _state.todayPlan = newPlan;
-      localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
-      
-      toast('ปรับลำดับการเดินทางให้เหมาะสมที่สุดแล้ว ✅', 'success');
-      renderTodayPlan(true);
-    }
-  } catch (e) {
-    console.error('Speed/Optimization Error:', e);
-    toast('ไม่สามารถปรับลำดับการเดินทางได้ (ระบบขัดข้อง)', 'error');
-  }
-}
 
 function removeFromTodayPlan(index) {
   if (index < 0 || index >= _state.todayPlan.length) return;
@@ -1536,7 +1503,9 @@ async function optimizeTodayPlan() {
       // The trip starts at index 0 (Start) and ends back at 0.
       const order = optimizedIndices.filter((idx, pos) => idx !== 0 && optimizedIndices.indexOf(idx) === pos);
       
-      const optimizedPlan = order.map(idx => _state.todayPlan[idx - 1]);
+      const optimizedPlan = order
+        .map(idx => _state.todayPlan[idx - 1])
+        .filter(t => !!t); // CRITICAL: Filter out any undefineds
       
       _state.todayPlan = optimizedPlan;
       localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
