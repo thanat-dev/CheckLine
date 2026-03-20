@@ -18,8 +18,8 @@ let todayPlanMap;
 let todayPlanMarkers = [];
 let todayPlanPolyline;
 let inlineMaps = {}; // Track inline leaflet instances
-const BASE_LAT = 13.708991;
-const BASE_LNG = 100.587533;
+const BASE_LAT = 13.708966321126086;
+const BASE_LNG = 100.58747679097112;
 const BASE_NAME = 'โรงงานเภสัชกรรมทหาร';
 
 async function apiRequest(endpoint, method = 'GET', data = null) {
