@@ -171,11 +171,16 @@ const initDb = async () => {
       { name: 'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)', lat: 13.7434319, lng: 100.5378094 },
       { name: 'โรงพยาบาลทหารผ่านศึก', lat: 13.7721515, lng: 100.5518272 },
       { name: 'องค์การเภสัชกรรม สำนักงานใหญ่', lat: 13.759, lng: 100.528 },
-      { name: 'โรงพยาบาลสมเด็จพระปิ่นเกล้า', lat: 13.71, lng: 100.486944 }
+      { name: 'โรงพยาบาลสมเด็จพระปิ่นเกล้า', lat: 13.71, lng: 100.486944 },
+      { name: 'บริษัท กรุงเทพดรักสโตร์ จำกัด', lat: 13.7814175, lng: 100.6182549, address: '2585 2 ซอย ลาดพร้าว 87/1 แขวงคลองเจ้าคุณสิงห์ เขตวังทองหลาง กรุงเทพมหานคร 10310' }
     ];
 
     for (const loc of criticalLocs) {
-      await client.query(`UPDATE locations SET lat = $1, lng = $2 WHERE name = $3`, [loc.lat, loc.lng, loc.name]);
+      if (loc.address) {
+        await client.query(`UPDATE locations SET lat = $1, lng = $2, address = $3 WHERE name = $4`, [loc.lat, loc.lng, loc.address, loc.name]);
+      } else {
+        await client.query(`UPDATE locations SET lat = $1, lng = $2 WHERE name = $3`, [loc.lat, loc.lng, loc.name]);
+      }
     }
 
     // Migration: Update existing Zone 3 names to the new full name
