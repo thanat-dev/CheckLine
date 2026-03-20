@@ -1215,7 +1215,15 @@ function generateSelectedItinerary() {
   showCopyModal(msg);
   
   // Render Map Path
+  _state.todayPlan = selectedTasks;
   renderTodayPlan(true); // Re-render with road distances if needed
+  
+  // NEW: Automatically optimize if more than 1 location
+  if (selectedTasks.length > 1) {
+    optimizeTodayPlan();
+  } else {
+    localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
+  }
 }
 
 async function getRoadRoute(points) {
@@ -1381,21 +1389,20 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
       });
     } else if (idx === points.length - 1) {
       // Don't add a redundant marker at the end point if it's the same as the start
-      // But path drawing needs it. Marker for end is usually red too or different.
       return; 
     } else {
       const task = _state.todayPlan[idx-1];
       title = `<b>${idx}. ${task._label}</b>`;
     }
 
-    const m = L.marker([p[0], p[1]], markerIcon ? { icon: markerIcon } : {}).addTo(todayPlanMap).bindPopup(title);
-    todayPlanMarkers.push(m);
+    if (p[0] && p[1]) {
+      const m = L.marker([p[0], p[1]], markerIcon ? { icon: markerIcon } : {}).addTo(todayPlanMap).bindPopup(title);
+      todayPlanMarkers.push(m);
+    }
   });
 
   // Draw path
   if (roadGeometry) {
-    // roadGeometry is geojson { type: 'LineString', coordinates: [[lng, lat], ...] }
-    // Leaflet needs [[lat, lng], ...]
     const latLngs = roadGeometry.coordinates.map(c => [c[1], c[0]]);
     todayPlanPolyline = L.polyline(latLngs, {
       color: '#6366f1',
@@ -1405,7 +1412,7 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
     }).addTo(todayPlanMap);
   } else {
     // Straight lines fallback
-    todayPlanPolyline = L.polyline(points, {
+    todayPlanPolyline = L.polyline(points.filter(p => p[0] && p[1]), {
       color: '#6366f1',
       weight: 4,
       opacity: 0.6,
@@ -1415,8 +1422,51 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
   }
 
   const group = new L.featureGroup(todayPlanMarkers);
-  todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+  if (todayPlanMarkers.length > 0) {
+    todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+  }
   setTimeout(() => todayPlanMap.invalidateSize(), 300);
+}
+
+async function optimizeTodayPlan() {
+  if (_state.todayPlan.length < 2) return;
+  
+  toast('กำลังคำนวณลำดับการเดินทางที่เหมาะสมที่สุด...', 'info');
+  
+  const points = [[BASE_LAT, BASE_LNG]];
+  _state.todayPlan.forEach(t => {
+    const loc = getZoneData(t.location || t._label);
+    points.push([t.lat || loc.lat, t.lng || loc.lng]);
+  });
+
+  const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
+  const url = `https://router.project-osrm.org/trip/v1/driving/${coordsStr}?source=first&roundtrip=true&overview=full&geometries=geojson`;
+  
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (data.code === 'Ok' && data.waypoints) {
+      // OSRM Trip returns waypoints in the optimized order
+      // waypoints[i].waypoint_index is the original index in coordinates string
+      // waypoints[0] is source (factory)
+      
+      const optimizedOrder = data.waypoints
+        .sort((a, b) => a.trips_index - b.trips_index)
+        .map(wp => wp.waypoint_index)
+        .filter(idx => idx !== 0); // Remove factory index (0)
+        
+      const newPlan = optimizedOrder.map(oldIdx => _state.todayPlan[oldIdx - 1]);
+      _state.todayPlan = newPlan;
+      localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
+      
+      toast('ปรับลำดับการเดินทางให้เหมาะสมที่สุดแล้ว ✅', 'success');
+      renderTodayPlan(true);
+    }
+  } catch (e) {
+    console.error('Speed/Optimization Error:', e);
+    toast('ไม่สามารถปรับลำดับการเดินทางได้ (ระบบขัดข้อง)', 'error');
+  }
 }
 
 function removeFromTodayPlan(index) {
@@ -1428,6 +1478,75 @@ function removeFromTodayPlan(index) {
   
   toast(`นำ "${removedItem._label}" ออกจากแผนแล้ว`, 'info');
   renderTodayPlan(true);
+}
+
+async function optimizeTodayPlan() {
+  if (_state.todayPlan.length < 2) {
+    toast('ต้องมีสถานที่อย่างน้อย 2 แห่งเพื่อจัดเส้นทาง', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-optimize-plan');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⌛ กำลังคำนวณ...';
+  btn.disabled = true;
+
+  try {
+    // Prepare points: Start + all Stops (unique)
+    // Note: We don't add Start at the end here; OSRM /trip handles the loop
+    const points = [[BASE_LAT, BASE_LNG]];
+    _state.todayPlan.forEach(task => {
+      const locData = getZoneData(task.name || task.location || task._label);
+      const lat = task.lat || locData.lat;
+      const lng = task.lng || locData.lng;
+      if (lat && lng) points.push([lat, lng]);
+    });
+
+    const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
+    // source=first & destination=first means Start -> Optimized Middle -> Start
+    const url = `https://router.project-osrm.org/trip/v1/driving/${coordsStr}?source=first&destination=first&overview=full&geometries=geojson`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.code === 'Ok' && data.trips && data.trips[0]) {
+      const trip = data.trips[0];
+      // Search for the visited order. In OSRM v5, waypoints in the response
+      // are in original order, but the trip object might have waypoint_indices (if supported)
+      // OR we can use the waypoint_index from the waypoints array IF they were returned in trip order.
+      // Actually, many OSRM instances return data.waypoints in the order visited for /trip.
+      // Let's use a robust approach:
+      
+      let optimizedIndices = [];
+      if (trip.waypoint_indices) {
+        optimizedIndices = trip.waypoint_indices;
+      } else {
+        // Fallback: If waypoints in response are in trip order (some versions do this)
+        // or if we have to guess. Most modern OSRM /trip return waypoints in VISIT order.
+        optimizedIndices = data.waypoints.map(wp => wp.waypoint_index);
+      }
+
+      // Remove the first index (Start point) and any duplicates if they exist
+      // The trip starts at index 0 (Start) and ends back at 0.
+      const order = optimizedIndices.filter((idx, pos) => idx !== 0 && optimizedIndices.indexOf(idx) === pos);
+      
+      const optimizedPlan = order.map(idx => _state.todayPlan[idx - 1]);
+      
+      _state.todayPlan = optimizedPlan;
+      localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
+      
+      toast('จัดเรียงเส้นทางที่สั้นที่สุดให้เรียบร้อยแล้ว 🚀', 'success');
+      renderTodayPlan(true);
+    } else {
+      toast('ไม่สามารถเข้าถึงบริการจัดเส้นทางได้ในขณะนี้', 'error');
+    }
+  } catch (e) {
+    console.error('Optimization error:', e);
+    toast('เกิดข้อผิดพลาดในการจัดเส้นทาง', 'error');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }
 
 async function getBatteryStatus() {

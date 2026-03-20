@@ -111,7 +111,10 @@
       <div class="card" style="border-left: 6px solid #6366f1;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
           <div class="section-title" style="margin:0">📅 สรุปแผนการเดินทางวันนี้</div>
-          <button class="btn btn-ghost btn-sm" onclick="openItinerarySelector()">✏️ แก้ไข</button>
+          <div style="display:flex; gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="optimizeTodayPlan()" id="btn-optimize-plan" title="จัดเรียงลำดับเส้นทางที่สั้นที่สุดอัตโนมัติ">🚀 จัดเส้นทาง</button>
+            <button class="btn btn-ghost btn-sm" onclick="openItinerarySelector()">✏️ แก้ไข</button>
+          </div>
         </div>
         
         <!-- NEW: Itinerary Map -->
