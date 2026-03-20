@@ -111,8 +111,12 @@
       <div class="card" style="border-left: 6px solid #6366f1;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
           <div class="section-title" style="margin:0">📅 สรุปแผนการเดินทางวันนี้</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
-            <button class="btn btn-secondary btn-sm" onclick="openEntireRouteInGoogleMaps()" id="btn-gmaps-all" title="เปิดเส้นทางทั้งหมดในแอป Google Maps">🌐 เปิดแผนที่ทั้งหมด</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+            <div class="form-check form-switch" style="margin-right:8px; display:flex; align-items:center; gap:4px; font-size:14px;">
+              <input class="form-check-input" type="checkbox" id="traffic-toggle" onchange="toggleTrafficLayer()">
+              <label class="form-check-label" for="traffic-toggle">🚥 จราจร</label>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openEntireRouteInGoogleMaps()" id="btn-gmaps-all" title="เปิดเส้นทางทั้งหมดในแอป Google Maps">🌐 แผนที่จราจรจริง</button>
             <button class="btn btn-ghost btn-sm" onclick="openItinerarySelector()">✏️ แก้ไข</button>
           </div>
         </div>

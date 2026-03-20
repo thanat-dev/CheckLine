@@ -17,6 +17,7 @@ let markers = [];
 let todayPlanMap;
 let todayPlanMarkers = [];
 let todayPlanPolyline;
+let todayPlanTrafficLayer; // Traffic layer instance
 let inlineMaps = {}; // Track inline leaflet instances
 const BASE_LAT = 13.708966321126086;
 const BASE_LNG = 100.58747679097112;
@@ -1381,6 +1382,16 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(todayPlanMap);
+  }
+
+  // Preserve traffic layer across renders if enabled
+  if (document.getElementById('traffic-toggle').checked) {
+    if (!todayPlanTrafficLayer) {
+      todayPlanTrafficLayer = L.tileLayer('https://mt1.google.com/vt?lyrs=h@159000000,traffic|seconds_into_week:-1&style=15&x={x}&y={y}&z={z}', {
+        maxZoom: 20, opacity: 0.7, attribution: '© Google Traffic'
+      });
+    }
+    todayPlanTrafficLayer.addTo(todayPlanMap);
   }
 
   // Clear existing
