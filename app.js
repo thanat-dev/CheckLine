@@ -693,7 +693,7 @@ function renderDashboard() {
   const moveBtn = document.getElementById('move-pending-btn');
   if (moveBtn) moveBtn.style.display = pendingOld.length > 0 ? 'block' : 'none';
 
-  renderTodayPlan();
+  renderTodayPlan(true);
 
   document.getElementById('stat-pending-col').textContent = cols.filter(c => c.status === 'pending' || c.status === 'traveling').length;
   document.getElementById('stat-pending-dep').textContent = deps.filter(d => d.status === 'pending').length;
@@ -1214,13 +1214,28 @@ function generateSelectedItinerary() {
   closeModal('itinerary-selector');
   showCopyModal(msg);
   
-  // Save to todayPlan state and render on Dashboard
-  _state.todayPlan = selectedTasks;
-  localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
-  renderTodayPlan();
+  // Render Map Path
+  renderTodayPlan(true); // Re-render with road distances if needed
 }
 
-function renderTodayPlan() {
+async function getRoadRoute(points) {
+  if (points.length < 2) return null;
+  const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`;
+  
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+      return data.routes[0];
+    }
+  } catch (e) {
+    console.error('OSRM Route Error:', e);
+  }
+  return null;
+}
+
+async function renderTodayPlan(useRoad = false) {
   const container = document.getElementById('today-plan-container');
   const content = document.getElementById('today-plan-content');
   const totalDistEl = document.getElementById('today-total-distance');
@@ -1246,41 +1261,58 @@ function renderTodayPlan() {
 
   container.style.display = 'block';
   
-  let html = '';
-  let totalDist = 0;
-  let currentLat = BASE_LAT;
-  let currentLng = BASE_LNG;
-
-  // 1. Initial Leg: Base to First Stop
-  const first = _state.todayPlan[0];
-  const firstLocData = getZoneData(first.location || first._label);
-  const firstLat = first.lat || firstLocData.lat;
-  const firstLng = first.lng || firstLocData.lng;
-  
-  let d0 = 0;
-  if (firstLat && firstLng) {
-    d0 = calculateDistance(BASE_LAT, BASE_LNG, firstLat, firstLng);
-    totalDist += d0;
-  }
-
-  html += `
-    <div style="display:flex; flex-direction:column; gap:5px">
-      <div class="itinerary-stop">
-        <div class="itinerary-dot itinerary-dot-start">S</div>
-        <div style="flex:1; font-weight:600">${BASE_NAME} (เริ่มต้น)</div>
-      </div>
-      <div class="itinerary-step">
-        🚗 ${d0.toFixed(2)} กม.
-      </div>
-  `;
-
-  // 2. Sequential Stops
-  for (let i = 0; i < _state.todayPlan.length; i++) {
-    const task = _state.todayPlan[i];
-    const locData = getZoneData(task.location || task._label);
+  // 1. Prepare points
+  const points = [[BASE_LAT, BASE_LNG]];
+  _state.todayPlan.forEach(task => {
+    const locData = getZoneData(task.name || task.location || task._label);
     const lat = task.lat || locData.lat;
     const lng = task.lng || locData.lng;
-    
+    if (lat && lng) points.push([lat, lng]);
+  });
+  points.push([BASE_LAT, BASE_LNG]); // Back to base
+
+  // 2. Fetch Road Route if requested
+  let roadDistances = [];
+  let roadGeometry = null;
+  let totalDist = 0;
+  let usingRoad = false;
+
+  if (useRoad) {
+    const route = await getRoadRoute(points);
+    if (route) {
+      roadDistances = route.legs.map(leg => leg.distance / 1000); // meters to KM
+      roadGeometry = route.geometry;
+      totalDist = route.distance / 1000;
+      usingRoad = true;
+    }
+  }
+
+  // Fallback to Haversine if no road route
+  if (!usingRoad) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const d = calculateDistance(points[i][0], points[i][1], points[i+1][0], points[i+1][1]);
+      roadDistances.push(d);
+      totalDist += d;
+    }
+  }
+
+  // 3. Render HTML
+  let html = `<div style="display:flex; flex-direction:column; gap:5px">`;
+  
+  // Start
+  html += `
+    <div class="itinerary-stop">
+      <div class="itinerary-dot itinerary-dot-start">S</div>
+      <div style="flex:1; font-weight:600">${BASE_NAME} (เริ่มต้น)</div>
+    </div>
+    <div class="itinerary-step">
+      🚗 ${roadDistances[0].toFixed(2)} กม. ${usingRoad ? '🛣️' : '📏'}
+    </div>
+  `;
+
+  // Stops
+  for (let i = 0; i < _state.todayPlan.length; i++) {
+    const task = _state.todayPlan[i];
     html += `
       <div class="itinerary-stop">
         <div class="itinerary-dot itinerary-dot-stop">${i+1}</div>
@@ -1292,52 +1324,31 @@ function renderTodayPlan() {
       </div>
     `;
 
-    if (i < _state.todayPlan.length - 1) {
-      const nextTask = _state.todayPlan[i+1];
-      const nextLocData = getZoneData(nextTask.location || nextTask._label);
-      const nextLat = nextTask.lat || nextLocData.lat;
-      const nextLng = nextTask.lng || nextLocData.lng;
-      
-      let d = 0;
-      if (lat && lng && nextLat && nextLng) {
-        d = calculateDistance(lat, lng, nextLat, nextLng);
-        totalDist += d;
-      }
-      
-      html += `
-        <div class="itinerary-step">
-          🚗 ${d.toFixed(2)} กม.
-        </div>
-      `;
-    } else {
-      // 3. Final Leg: Last Stop back to Base
-      let dEnd = 0;
-      if (lat && lng) {
-        dEnd = calculateDistance(lat, lng, BASE_LAT, BASE_LNG);
-        totalDist += dEnd;
-      }
-      
-      html += `
-        <div class="itinerary-step">
-          🚗 ${dEnd.toFixed(2)} กม.
-        </div>
-        <div class="itinerary-stop">
-          <div class="itinerary-dot itinerary-dot-end">E</div>
-          <div style="flex:1; font-weight:600">${BASE_NAME} (กลับโรงงาน)</div>
-        </div>
-      `;
-    }
+    // Step to next OR to End
+    html += `
+      <div class="itinerary-step">
+        🚗 ${roadDistances[i+1].toFixed(2)} กม. ${usingRoad ? '🛣️' : '📏'}
+      </div>
+    `;
   }
+
+  // End
+  html += `
+    <div class="itinerary-stop">
+      <div class="itinerary-dot itinerary-dot-end">E</div>
+      <div style="flex:1; font-weight:600">${BASE_NAME} (กลับโรงงาน)</div>
+    </div>
+  `;
 
   html += `</div>`;
   content.innerHTML = html;
   if (totalDistEl) totalDistEl.textContent = totalDist.toFixed(2) + ' กม.';
   
   // Render Map Path
-  renderTodayPlanMap();
+  renderTodayPlanMap(roadGeometry, points);
 }
 
-function renderTodayPlanMap() {
+function renderTodayPlanMap(roadGeometry = null, points = []) {
   const container = document.getElementById('today-plan-map');
   if (!container || _state.todayPlan.length === 0) {
     if (container) container.style.display = 'none';
@@ -1358,45 +1369,54 @@ function renderTodayPlanMap() {
   todayPlanMarkers = [];
   if (todayPlanPolyline) todayPlanMap.removeLayer(todayPlanPolyline);
 
-  const pathPoints = [[BASE_LAT, BASE_LNG]];
-  
-  // Start Marker
-  const startMarker = L.marker([BASE_LAT, BASE_LNG], {
-    icon: L.icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-      iconSize: [25, 41], iconAnchor: [12, 41]
-    })
-  }).addTo(todayPlanMap).bindPopup(`<b>${BASE_NAME} (เริ่มต้น)</b>`);
-  todayPlanMarkers.push(startMarker);
-
-  _state.todayPlan.forEach((task, idx) => {
-    const locData = getZoneData(task.name || task.location || task._label);
-    const lat = task.lat || locData.lat;
-    const lng = task.lng || locData.lng;
-    
-    if (lat && lng) {
-      pathPoints.push([lat, lng]);
-      const m = L.marker([lat, lng]).addTo(todayPlanMap)
-        .bindPopup(`<b>${idx + 1}. ${task._label}</b>`);
-      todayPlanMarkers.push(m);
+  // Add markers
+  points.forEach((p, idx) => {
+    let title = '';
+    let markerIcon = null;
+    if (idx === 0) {
+      title = `<b>${BASE_NAME} (เริ่มต้น)</b>`;
+      markerIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        iconSize: [25, 41], iconAnchor: [12, 41]
+      });
+    } else if (idx === points.length - 1) {
+      // Don't add a redundant marker at the end point if it's the same as the start
+      // But path drawing needs it. Marker for end is usually red too or different.
+      return; 
+    } else {
+      const task = _state.todayPlan[idx-1];
+      title = `<b>${idx}. ${task._label}</b>`;
     }
+
+    const m = L.marker([p[0], p[1]], markerIcon ? { icon: markerIcon } : {}).addTo(todayPlanMap).bindPopup(title);
+    todayPlanMarkers.push(m);
   });
 
-  pathPoints.push([BASE_LAT, BASE_LNG]); // Back to base
-
-  todayPlanPolyline = L.polyline(pathPoints, {
-    color: '#6366f1',
-    weight: 4,
-    opacity: 0.7,
-    dashArray: '10, 10',
-    lineJoin: 'round'
-  }).addTo(todayPlanMap);
+  // Draw path
+  if (roadGeometry) {
+    // roadGeometry is geojson { type: 'LineString', coordinates: [[lng, lat], ...] }
+    // Leaflet needs [[lat, lng], ...]
+    const latLngs = roadGeometry.coordinates.map(c => [c[1], c[0]]);
+    todayPlanPolyline = L.polyline(latLngs, {
+      color: '#6366f1',
+      weight: 4,
+      opacity: 0.8,
+      lineJoin: 'round'
+    }).addTo(todayPlanMap);
+  } else {
+    // Straight lines fallback
+    todayPlanPolyline = L.polyline(points, {
+      color: '#6366f1',
+      weight: 4,
+      opacity: 0.6,
+      dashArray: '10, 10',
+      lineJoin: 'round'
+    }).addTo(todayPlanMap);
+  }
 
   const group = new L.featureGroup(todayPlanMarkers);
   todayPlanMap.fitBounds(group.getBounds().pad(0.2));
-  
-  // Important: invalidateSize to fix leaflet rendering in hidden/shown containers
-  setTimeout(() => todayPlanMap.invalidateSize(), 100);
+  setTimeout(() => todayPlanMap.invalidateSize(), 300);
 }
 
 function removeFromTodayPlan(index) {
@@ -1407,7 +1427,7 @@ function removeFromTodayPlan(index) {
   localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
   
   toast(`นำ "${removedItem._label}" ออกจากแผนแล้ว`, 'info');
-  renderTodayPlan();
+  renderTodayPlan(true);
 }
 
 async function getBatteryStatus() {
