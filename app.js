@@ -1328,7 +1328,10 @@ async function renderTodayPlan(useRoad = false) {
           <div style="font-weight:600">${task._label}</div>
           <div style="font-size:0.75rem; color:var(--text-dim)">${task._zone}</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="removeFromTodayPlan(${i})" style="padding:0; width:28px; height:28px; border-radius:50%; min-width:auto; border:none; background:rgba(239, 68, 68, 0.1); color:var(--danger)">✕</button>
+        <div style="display:flex; gap:5px">
+          <button class="btn btn-ghost btn-sm" onclick="openInGoogleMaps(${i})" title="นำทางด้วย Google Maps" style="padding:0; width:32px; height:32px; border-radius:8px; min-width:auto; border:1px solid var(--glass-border); color:var(--info)">📍</button>
+          <button class="btn btn-ghost btn-sm" onclick="removeFromTodayPlan(${i})" title="ลบออกจากแผน" style="padding:0; width:32px; height:32px; border-radius:8px; min-width:auto; border:1px solid var(--glass-border); color:var(--danger)">✕</button>
+        </div>
       </div>
     `;
 
@@ -1547,6 +1550,41 @@ async function optimizeTodayPlan() {
     btn.innerHTML = originalText;
     btn.disabled = false;
   }
+}
+
+function openInGoogleMaps(index) {
+  if (index < 0 || index >= _state.todayPlan.length) return;
+  const task = _state.todayPlan[index];
+  const locData = getZoneData(task.name || task.location || task._label);
+  const lat = task.lat || locData.lat;
+  const lng = task.lng || locData.lng;
+  
+  if (lat && lng) {
+    // Open single destination from current location
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    window.open(url, '_blank');
+  } else {
+    toast('ไม่พบพิกัดสำหรับสถานที่นี้', 'warning');
+  }
+}
+
+function openEntireRouteInGoogleMaps() {
+  if (_state.todayPlan.length === 0) return;
+  
+  // Construct URL: /Start/Stop1/Stop2/.../Start
+  let path = `${BASE_LAT},${BASE_LNG}`;
+  
+  _state.todayPlan.forEach(task => {
+    const locData = getZoneData(task.name || task.location || task._label);
+    const lat = task.lat || locData.lat;
+    const lng = task.lng || locData.lng;
+    if (lat && lng) path += `/${lat},${lng}`;
+  });
+  
+  path += `/${BASE_LAT},${BASE_LNG}`;
+  
+  const url = `https://www.google.com/maps/dir/${path}`;
+  window.open(url, '_blank');
 }
 
 async function getBatteryStatus() {
