@@ -163,6 +163,20 @@ const initDb = async () => {
           lng = 100.5537
       WHERE name = 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย'
     `);
+    
+    // Ensure critical locations from ZONE_MAP have coordinates in DB
+    const criticalLocs = [
+      { name: 'โรงพยาบาลพระมงกุฎเกล้า', lat: 13.768611, lng: 100.5325 },
+      { name: 'บริษัท โรงพยาบาล ไอเอ็มเอช สีลม', lat: 13.725, lng: 100.530 },
+      { name: 'มูลนิธิโรงพยาบาลตำรวจในพระบรมราชินูปถัมภ์ (โครงการร้านยา)', lat: 13.7434319, lng: 100.5378094 },
+      { name: 'โรงพยาบาลทหารผ่านศึก', lat: 13.7721515, lng: 100.5518272 },
+      { name: 'องค์การเภสัชกรรม สำนักงานใหญ่', lat: 13.759, lng: 100.528 },
+      { name: 'โรงพยาบาลสมเด็จพระปิ่นเกล้า', lat: 13.71, lng: 100.486944 }
+    ];
+
+    for (const loc of criticalLocs) {
+      await client.query(`UPDATE locations SET lat = $1, lng = $2 WHERE name = $3`, [loc.lat, loc.lng, loc.name]);
+    }
 
     // Migration: Update existing Zone 3 names to the new full name
     await client.query(`

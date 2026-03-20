@@ -1275,12 +1275,20 @@ async function renderTodayPlan(useRoad = false) {
   // 1. Prepare points
   const points = [[BASE_LAT, BASE_LNG]];
   _state.todayPlan.forEach(task => {
-    // PREFER latest master data for the location
-    const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
-    const locData = masterLoc || getZoneData(task.name || task.location || task._label);
-    const lat = locData.lat || task.lat;
-    const lng = locData.lng || task.lng;
-    if (lat && lng) points.push([lat, lng]);
+    if (!task) return;
+    const name = task._label || task.name || task.location;
+    const masterLoc = _state.locations.find(l => l.name === name);
+    const fallbackData = getZoneData(name);
+    
+    // Resolution Priority: DB Master -> Hardcoded ZONE_MAP -> Task State
+    const lat = (masterLoc && masterLoc.lat) || fallbackData.lat || task.lat;
+    const lng = (masterLoc && masterLoc.lng) || fallbackData.lng || task.lng;
+    
+    if (lat && lng) {
+      points.push([parseFloat(lat), parseFloat(lng)]);
+    } else {
+      console.warn(`No coordinates found for: ${name}`);
+    }
   });
   points.push([BASE_LAT, BASE_LNG]); // Back to base
 
@@ -1474,10 +1482,10 @@ async function optimizeTodayPlan(isAuto = false) {
     const points = [[BASE_LAT, BASE_LNG]];
     _state.todayPlan.forEach(task => {
       const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
-      const locData = masterLoc || getZoneData(task.name || task.location || task._label);
-      const lat = locData.lat || task.lat;
-      const lng = locData.lng || task.lng;
-      if (lat && lng) points.push([lat, lng]);
+      const fallbackData = getZoneData(task.name || task.location || task._label);
+      const lat = (masterLoc && masterLoc.lat) || fallbackData.lat || task.lat;
+      const lng = (masterLoc && masterLoc.lng) || fallbackData.lng || task.lng;
+      if (lat && lng) points.push([parseFloat(lat), parseFloat(lng)]);
     });
 
     const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
