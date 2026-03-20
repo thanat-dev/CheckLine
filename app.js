@@ -18,6 +18,8 @@ let todayPlanMap;
 let todayPlanMarkers = [];
 let todayPlanPolyline;
 let todayPlanTrafficLayer; // Traffic layer instance
+let settingsMap; // Settings map instance
+let settingsMarker; // Settings map marker
 let inlineMaps = {}; // Track inline leaflet instances
 const BASE_LAT = 13.708966321126086;
 const BASE_LNG = 100.58747679097112;
@@ -293,7 +295,10 @@ function showPage(page) {
   if (page === 'dashboard') renderDashboard();
   else if (page === 'collection') renderCollections();
   else if (page === 'deposit') renderDeposits();
-  else if (page === 'settings') renderSettings();
+  else if (page === 'settings') {
+    renderSettings();
+    setTimeout(initSettingsMap, 300);
+  }
 }
 
 // ==================== FORMATTING ====================
@@ -396,6 +401,11 @@ function toggleInlineMap(rowId, name, lat, lng) {
     }).addTo(iMap).bindPopup(`<b>${BASE_NAME} (ต้นทาง)</b>`);
 
     inlineMaps[rowId] = iMap;
+    
+    // Safety for mobile/animation: recalculate size after animation ends
+    setTimeout(() => { 
+      if (iMap) iMap.invalidateSize(); 
+    }, 400);
   }
 }
 
@@ -762,6 +772,50 @@ function renderSettings() {
   const settings = getSettings();
   if (settings.gasUrl) document.getElementById('setting-gas-url').value = settings.gasUrl;
   renderLocationTags();
+  
+  // Clear map marker
+  if (settingsMarker) {
+    settingsMap.removeLayer(settingsMarker);
+    settingsMarker = null;
+  }
+}
+
+function initSettingsMap() {
+  if (settingsMap) return;
+  
+  settingsMap = L.map('settings-map').setView([BASE_LAT, BASE_LNG], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(settingsMap);
+
+  settingsMap.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    document.getElementById('new-location-lat').value = lat.toFixed(7);
+    document.getElementById('new-location-lng').value = lng.toFixed(7);
+    updateSettingsMarker(lat, lng);
+  });
+}
+
+function updateSettingsMarker(lat, lng) {
+  if (!settingsMap) return;
+  if (settingsMarker) settingsMap.removeLayer(settingsMarker);
+  
+  settingsMarker = L.marker([lat, lng], { draggable: true }).addTo(settingsMap);
+  settingsMap.panTo([lat, lng]);
+
+  settingsMarker.on('dragend', function (event) {
+      const position = settingsMarker.getLatLng();
+      document.getElementById('new-location-lat').value = position.lat.toFixed(7);
+      document.getElementById('new-location-lng').value = position.lng.toFixed(7);
+  });
+}
+
+function updateSettingsMapFromInputs() {
+  const lat = parseFloat(document.getElementById('new-location-lat').value);
+  const lng = parseFloat(document.getElementById('new-location-lng').value);
+  if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+    updateSettingsMarker(lat, lng);
+  }
   renderBankTags();
   updateLocationDatalistSettings();
 }
@@ -882,6 +936,9 @@ function editLocationSetting(name) {
   
   document.getElementById('btn-save-location').textContent = '💾 บันทึกการแก้ไข';
   document.getElementById('new-location').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  // Update Settings Map
+  updateSettingsMapFromInputs();
 }
 
 function autoFillLocationSettings() {
@@ -898,6 +955,9 @@ function autoFillLocationSettings() {
     if (zData.contact_name) document.getElementById('new-location-contact').value = zData.contact_name;
     if (zData.contact_phone) document.getElementById('new-location-phone').value = zData.contact_phone;
     
+    // Update Settings Map
+    updateSettingsMapFromInputs();
+  }
     // If it's a prefix match (user still typing), we don't change button text,
     // but if it's a full match, we might want to alert them it's already known.
     const exactMatch = Object.keys(ZONE_MAP).find(k => k === name);
@@ -1449,7 +1509,13 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
       todayPlanMap.fitBounds(group.getBounds().pad(0.2));
     } catch (e) { console.error('Map bounds error:', e); }
   }
-  setTimeout(() => { if (todayPlanMap) todayPlanMap.invalidateSize(); }, 300);
+  // Mobile safety: ensure size is recalculated after animation/rendering
+  setTimeout(() => { 
+    if (todayPlanMap) {
+      todayPlanMap.invalidateSize(); 
+      if (group.getLayers().length > 0) todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+    }
+  }, 500);
 }
 
 function toggleTrafficLayer() {

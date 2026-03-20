@@ -269,11 +269,12 @@
         <input type="text" class="form-input" id="new-location-phone" placeholder="เบอร์โทรศัพท์">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="number" step="any" class="form-input" id="new-location-lat" placeholder="ละติจูด (Lat)">
-        <input type="number" step="any" class="form-input" id="new-location-lng" placeholder="ลองจิจูด (Lng)">
+        <input type="number" step="any" class="form-input" id="new-location-lat" placeholder="ละติจูด (Lat)" oninput="updateSettingsMapFromInputs()">
+        <input type="number" step="any" class="form-input" id="new-location-lng" placeholder="ลองจิจูด (Lng)" oninput="updateSettingsMapFromInputs()">
         <button class="btn btn-primary btn-sm" id="btn-save-location" onclick="addLocation()">+ เพิ่ม</button>
         <button class="btn btn-ghost btn-sm" onclick="clearLocationFields()">ล้าง</button>
       </div>
+      <div id="settings-map" style="height: 200px; width: 100%; border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);"></div>
       <div class="tags-container" id="locations-tags"></div>
     </div>
 
