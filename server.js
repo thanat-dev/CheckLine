@@ -149,6 +149,13 @@ const initDb = async () => {
     `);
     await client.query(`
       UPDATE locations 
+      SET address = '504 ถนน สมเด็จพระเจ้าตากสิน แขวงบุคคโล เขตธนบุรี กรุงเทพมหานคร 10600',
+          lat = 13.7095,
+          lng = 100.4855
+      WHERE name = 'กรมแพทย์ทหารเรือ'
+    `);
+    await client.query(`
+      UPDATE locations 
       SET address = 'กลุ่มงานเวชภัณฑ์ กองเภสัชกรรม สำนักอนามัย - สถานที่ : ศาลาว่าการกรุงเทพมหานคร 2 189 ชั้น 4 อาคารธานีนพรัตน์ กองการคลัง ถ.มิตรไมตรี เขตดินแดง กทม.10400',
           contact_name = 'ป้อม',
           contact_phone = '02-245-3088',
