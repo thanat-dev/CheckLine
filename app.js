@@ -1285,6 +1285,7 @@ function renderTodayPlan() {
           <div style="font-weight:600">${task._label}</div>
           <div style="font-size:0.75rem; color:var(--text-dim)">${task._zone}</div>
         </div>
+        <button class="btn btn-ghost btn-sm" onclick="removeFromTodayPlan(${i})" style="padding:0; width:28px; height:28px; border-radius:50%; min-width:auto; border:none; background:rgba(239, 68, 68, 0.1); color:var(--danger)">✕</button>
       </div>
     `;
 
@@ -1328,6 +1329,17 @@ function renderTodayPlan() {
   html += `</div>`;
   content.innerHTML = html;
   if (totalDistEl) totalDistEl.textContent = totalDist.toFixed(2) + ' กม.';
+}
+
+function removeFromTodayPlan(index) {
+  if (index < 0 || index >= _state.todayPlan.length) return;
+  
+  const removedItem = _state.todayPlan[index];
+  _state.todayPlan.splice(index, 1);
+  localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
+  
+  toast(`นำ "${removedItem._label}" ออกจากแผนแล้ว`, 'info');
+  renderTodayPlan();
 }
 
 async function getBatteryStatus() {
