@@ -1272,9 +1272,11 @@ async function renderTodayPlan(useRoad = false) {
   // 1. Prepare points
   const points = [[BASE_LAT, BASE_LNG]];
   _state.todayPlan.forEach(task => {
-    const locData = getZoneData(task.name || task.location || task._label);
-    const lat = task.lat || locData.lat;
-    const lng = task.lng || locData.lng;
+    // PREFER latest master data for the location
+    const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
+    const locData = masterLoc || getZoneData(task.name || task.location || task._label);
+    const lat = locData.lat || task.lat;
+    const lng = locData.lng || task.lng;
     if (lat && lng) points.push([lat, lng]);
   });
   points.push([BASE_LAT, BASE_LNG]); // Back to base
@@ -1499,9 +1501,10 @@ async function optimizeTodayPlan() {
     // Note: We don't add Start at the end here; OSRM /trip handles the loop
     const points = [[BASE_LAT, BASE_LNG]];
     _state.todayPlan.forEach(task => {
-      const locData = getZoneData(task.name || task.location || task._label);
-      const lat = task.lat || locData.lat;
-      const lng = task.lng || locData.lng;
+      const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
+      const locData = masterLoc || getZoneData(task.name || task.location || task._label);
+      const lat = locData.lat || task.lat;
+      const lng = locData.lng || task.lng;
       if (lat && lng) points.push([lat, lng]);
     });
 
@@ -1555,9 +1558,10 @@ async function optimizeTodayPlan() {
 function openInGoogleMaps(index) {
   if (index < 0 || index >= _state.todayPlan.length) return;
   const task = _state.todayPlan[index];
-  const locData = getZoneData(task.name || task.location || task._label);
-  const lat = task.lat || locData.lat;
-  const lng = task.lng || locData.lng;
+  const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
+  const locData = masterLoc || getZoneData(task.name || task.location || task._label);
+  const lat = locData.lat || task.lat;
+  const lng = locData.lng || task.lng;
   
   if (lat && lng) {
     // Open single destination from current location
@@ -1575,9 +1579,10 @@ function openEntireRouteInGoogleMaps() {
   let path = `${BASE_LAT},${BASE_LNG}`;
   
   _state.todayPlan.forEach(task => {
-    const locData = getZoneData(task.name || task.location || task._label);
-    const lat = task.lat || locData.lat;
-    const lng = task.lng || locData.lng;
+    const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
+    const locData = masterLoc || getZoneData(task.name || task.location || task._label);
+    const lat = locData.lat || task.lat;
+    const lng = locData.lng || task.lng;
     if (lat && lng) path += `/${lat},${lng}`;
   });
   

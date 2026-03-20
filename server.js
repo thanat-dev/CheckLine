@@ -150,8 +150,8 @@ const initDb = async () => {
     await client.query(`
       UPDATE locations 
       SET address = '504 ถนน สมเด็จพระเจ้าตากสิน แขวงบุคคโล เขตธนบุรี กรุงเทพมหานคร 10600',
-          lat = 13.7095,
-          lng = 100.4855
+          lat = 13.7095352,
+          lng = 100.4855016
       WHERE name = 'กรมแพทย์ทหารเรือ'
     `);
     await client.query(`
