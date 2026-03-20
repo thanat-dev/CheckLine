@@ -1216,17 +1216,9 @@ function generateSelectedItinerary() {
   
   // Render Map Path
   _state.todayPlan = selectedTasks;
-  renderTodayPlan(true); // Re-render with road distances if needed
+  renderTodayPlan(true); 
   
-  // NEW: Automatically optimize if more than 1 location
-  if (selectedTasks.length > 1) {
-    // Add a small delay to avoid hitting OSRM rate limit immediately after renderTodayPlan
-    setTimeout(() => {
-      optimizeTodayPlan(true); // pass true to indicate it's auto-optimization (silent)
-    }, 800);
-  } else {
-    localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
-  }
+  localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
 }
 
 async function getRoadRoute(points) {
@@ -1463,81 +1455,8 @@ function removeFromTodayPlan(index) {
   renderTodayPlan(true);
 }
 
-async function optimizeTodayPlan(isAuto = false) {
-  if (_state.todayPlan.length < 2) {
-    if (!isAuto) toast('ต้องมีสถานที่อย่างน้อย 2 แห่งเพื่อจัดเส้นทาง', 'warning');
-    return;
-  }
+// optimizeTodayPlan function removed as per user request to use stable fallback distances without intrusive alerts.
 
-  const btn = document.getElementById('btn-optimize-plan');
-  const originalText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.innerHTML = '⌛ กำลังคำนวณ...';
-    btn.disabled = true;
-  }
-
-  try {
-    // Prepare points: Start + all Stops (unique)
-    // Note: We don't add Start at the end here; OSRM /trip handles the loop
-    const points = [[BASE_LAT, BASE_LNG]];
-    _state.todayPlan.forEach(task => {
-      const masterLoc = _state.locations.find(l => l.name === (task._label || task.name));
-      const fallbackData = getZoneData(task.name || task.location || task._label);
-      const lat = (masterLoc && masterLoc.lat) || fallbackData.lat || task.lat;
-      const lng = (masterLoc && masterLoc.lng) || fallbackData.lng || task.lng;
-      if (lat && lng) points.push([parseFloat(lat), parseFloat(lng)]);
-    });
-
-    const coordsStr = points.map(p => `${p[1]},${p[0]}`).join(';');
-    // source=first & destination=first means Start -> Optimized Middle -> Start
-    const url = `https://router.project-osrm.org/trip/v1/driving/${coordsStr}?source=first&destination=first&overview=full&geometries=geojson`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.code === 'Ok' && data.trips && data.trips[0]) {
-      const trip = data.trips[0];
-      // Search for the visited order. In OSRM v5, waypoints in the response
-      // are in original order, but the trip object might have waypoint_indices (if supported)
-      // OR we can use the waypoint_index from the waypoints array IF they were returned in trip order.
-      // Actually, many OSRM instances return data.waypoints in the order visited for /trip.
-      // Let's use a robust approach:
-      
-      let optimizedIndices = [];
-      if (trip.waypoint_indices) {
-        optimizedIndices = trip.waypoint_indices;
-      } else {
-        // Fallback: If waypoints in response are in trip order (some versions do this)
-        // or if we have to guess. Most modern OSRM /trip return waypoints in VISIT order.
-        optimizedIndices = data.waypoints.map(wp => wp.waypoint_index);
-      }
-
-      // Remove the first index (Start point) and any duplicates if they exist
-      // The trip starts at index 0 (Start) and ends back at 0.
-      const order = optimizedIndices.filter((idx, pos) => idx !== 0 && optimizedIndices.indexOf(idx) === pos);
-      
-      const optimizedPlan = order
-        .map(idx => _state.todayPlan[idx - 1])
-        .filter(t => !!t); // CRITICAL: Filter out any undefineds
-      
-      _state.todayPlan = optimizedPlan;
-      localStorage.setItem('cl_today_plan', JSON.stringify(_state.todayPlan));
-      
-      toast('จัดเรียงเส้นทางที่สั้นที่สุดให้เรียบร้อยแล้ว 🚀', 'success');
-      renderTodayPlan(true);
-    } else {
-      if (!isAuto) toast('ไม่สามารถเข้าถึงบริการจัดเส้นทางได้ในขณะนี้ (ใช้วิธีคำนวณสำรอง)', 'error');
-    }
-  } catch (e) {
-    console.error('Optimization error:', e);
-    if (!isAuto) toast('เกิดข้อผิดพลาดในการจัดเส้นทาง', 'error');
-  } finally {
-    if (btn) {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-    }
-  }
-}
 
 function openInGoogleMaps(index) {
   if (index < 0 || index >= _state.todayPlan.length) return;
