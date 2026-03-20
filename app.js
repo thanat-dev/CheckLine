@@ -1220,7 +1220,10 @@ function generateSelectedItinerary() {
   
   // NEW: Automatically optimize if more than 1 location
   if (selectedTasks.length > 1) {
-    optimizeTodayPlan();
+    // Add a small delay to avoid hitting OSRM rate limit immediately after renderTodayPlan
+    setTimeout(() => {
+      optimizeTodayPlan(true); // pass true to indicate it's auto-optimization (silent)
+    }, 800);
   } else {
     localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
   }
@@ -1238,7 +1241,7 @@ async function getRoadRoute(points) {
       return data.routes[0];
     }
   } catch (e) {
-    console.error('OSRM Route Error:', e);
+    // console.log('OSRM Route Error:', e);
   }
   return null;
 }
@@ -1452,16 +1455,18 @@ function removeFromTodayPlan(index) {
   renderTodayPlan(true);
 }
 
-async function optimizeTodayPlan() {
+async function optimizeTodayPlan(isAuto = false) {
   if (_state.todayPlan.length < 2) {
-    toast('ต้องมีสถานที่อย่างน้อย 2 แห่งเพื่อจัดเส้นทาง', 'warning');
+    if (!isAuto) toast('ต้องมีสถานที่อย่างน้อย 2 แห่งเพื่อจัดเส้นทาง', 'warning');
     return;
   }
 
   const btn = document.getElementById('btn-optimize-plan');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '⌛ กำลังคำนวณ...';
-  btn.disabled = true;
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '⌛ กำลังคำนวณ...';
+    btn.disabled = true;
+  }
 
   try {
     // Prepare points: Start + all Stops (unique)
@@ -1513,14 +1518,16 @@ async function optimizeTodayPlan() {
       toast('จัดเรียงเส้นทางที่สั้นที่สุดให้เรียบร้อยแล้ว 🚀', 'success');
       renderTodayPlan(true);
     } else {
-      toast('ไม่สามารถเข้าถึงบริการจัดเส้นทางได้ในขณะนี้', 'error');
+      if (!isAuto) toast('ไม่สามารถเข้าถึงบริการจัดเส้นทางได้ในขณะนี้ (ใช้วิธีคำนวณสำรอง)', 'error');
     }
   } catch (e) {
     console.error('Optimization error:', e);
-    toast('เกิดข้อผิดพลาดในการจัดเส้นทาง', 'error');
+    if (!isAuto) toast('เกิดข้อผิดพลาดในการจัดเส้นทาง', 'error');
   } finally {
-    btn.innerHTML = originalText;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
 }
 
