@@ -794,6 +794,9 @@ function initSettingsMap() {
     document.getElementById('new-location-lng').value = lng.toFixed(7);
     updateSettingsMarker(lat, lng);
   });
+  
+  // Initial sync if fields have data
+  updateSettingsMapFromInputs();
 }
 
 function updateSettingsMarker(lat, lng) {
@@ -958,12 +961,6 @@ function autoFillLocationSettings() {
     // Update Settings Map
     updateSettingsMapFromInputs();
   }
-    // If it's a prefix match (user still typing), we don't change button text,
-    // but if it's a full match, we might want to alert them it's already known.
-    const exactMatch = Object.keys(ZONE_MAP).find(k => k === name);
-    if (exactMatch) {
-       // Optional: toggle button text if they want to edit existing?
-       // But existing locs might be in DB, so we handle it in addLocation
     }
   }
 }
