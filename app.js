@@ -14,6 +14,9 @@ let _state = {
 // Map variables
 let map;
 let markers = [];
+let todayPlanMap;
+let todayPlanMarkers = [];
+let todayPlanPolyline;
 let inlineMaps = {}; // Track inline leaflet instances
 const BASE_LAT = 13.708991;
 const BASE_LNG = 100.587533;
@@ -1329,6 +1332,71 @@ function renderTodayPlan() {
   html += `</div>`;
   content.innerHTML = html;
   if (totalDistEl) totalDistEl.textContent = totalDist.toFixed(2) + ' กม.';
+  
+  // Render Map Path
+  renderTodayPlanMap();
+}
+
+function renderTodayPlanMap() {
+  const container = document.getElementById('today-plan-map');
+  if (!container || _state.todayPlan.length === 0) {
+    if (container) container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  if (!todayPlanMap) {
+    todayPlanMap = L.map('today-plan-map').setView([BASE_LAT, BASE_LNG], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(todayPlanMap);
+  }
+
+  // Clear existing
+  todayPlanMarkers.forEach(m => todayPlanMap.removeLayer(m));
+  todayPlanMarkers = [];
+  if (todayPlanPolyline) todayPlanMap.removeLayer(todayPlanPolyline);
+
+  const pathPoints = [[BASE_LAT, BASE_LNG]];
+  
+  // Start Marker
+  const startMarker = L.marker([BASE_LAT, BASE_LNG], {
+    icon: L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      iconSize: [25, 41], iconAnchor: [12, 41]
+    })
+  }).addTo(todayPlanMap).bindPopup(`<b>${BASE_NAME} (เริ่มต้น)</b>`);
+  todayPlanMarkers.push(startMarker);
+
+  _state.todayPlan.forEach((task, idx) => {
+    const locData = getZoneData(task.name || task.location || task._label);
+    const lat = task.lat || locData.lat;
+    const lng = task.lng || locData.lng;
+    
+    if (lat && lng) {
+      pathPoints.push([lat, lng]);
+      const m = L.marker([lat, lng]).addTo(todayPlanMap)
+        .bindPopup(`<b>${idx + 1}. ${task._label}</b>`);
+      todayPlanMarkers.push(m);
+    }
+  });
+
+  pathPoints.push([BASE_LAT, BASE_LNG]); // Back to base
+
+  todayPlanPolyline = L.polyline(pathPoints, {
+    color: '#6366f1',
+    weight: 4,
+    opacity: 0.7,
+    dashArray: '10, 10',
+    lineJoin: 'round'
+  }).addTo(todayPlanMap);
+
+  const group = new L.featureGroup(todayPlanMarkers);
+  todayPlanMap.fitBounds(group.getBounds().pad(0.2));
+  
+  // Important: invalidateSize to fix leaflet rendering in hidden/shown containers
+  setTimeout(() => todayPlanMap.invalidateSize(), 100);
 }
 
 function removeFromTodayPlan(index) {
