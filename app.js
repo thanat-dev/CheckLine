@@ -961,8 +961,6 @@ function autoFillLocationSettings() {
     // Update Settings Map
     updateSettingsMapFromInputs();
   }
-    }
-  }
 }
 
 async function removeLocation(name) {
