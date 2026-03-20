@@ -1452,6 +1452,22 @@ function renderTodayPlanMap(roadGeometry = null, points = []) {
   setTimeout(() => { if (todayPlanMap) todayPlanMap.invalidateSize(); }, 300);
 }
 
+function toggleTrafficLayer() {
+  const isChecked = document.getElementById('traffic-toggle').checked;
+  if (!todayPlanMap) return;
+
+  if (isChecked) {
+    if (!todayPlanTrafficLayer) {
+      todayPlanTrafficLayer = L.tileLayer('https://mt1.google.com/vt?lyrs=h@159000000,traffic|seconds_into_week:-1&style=15&x={x}&y={y}&z={z}', {
+        maxZoom: 20, opacity: 0.7, attribution: '© Google Traffic'
+      });
+    }
+    todayPlanTrafficLayer.addTo(todayPlanMap);
+  } else {
+    if (todayPlanTrafficLayer) todayPlanMap.removeLayer(todayPlanTrafficLayer);
+  }
+}
+
 // Remove the old/duplicate optimizeTodayPlan that was here (lines 1436-1475)
 
 
@@ -1479,7 +1495,7 @@ function openInGoogleMaps(index) {
   
   if (lat && lng) {
     // Open single destination from current location
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&layer=t`;
     window.open(url, '_blank');
   } else {
     toast('ไม่พบพิกัดสำหรับสถานที่นี้', 'warning');
@@ -1502,7 +1518,7 @@ function openEntireRouteInGoogleMaps() {
   
   path += `/${BASE_LAT},${BASE_LNG}`;
   
-  const url = `https://www.google.com/maps/dir/${path}`;
+  const url = `https://www.google.com/maps/dir/${path}/data=!3m1!4b1!4m2!4m1!3e0&layer=t`;
   window.open(url, '_blank');
 }
 
