@@ -483,3 +483,56 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* === TODAY PLAN ITINERARY === */
+#today-plan-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#today-plan-container .card {
+  animation: slideInLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.itinerary-stop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.itinerary-step {
+  border-left: 2px dashed var(--accent-primary);
+  margin-left: 11px;
+  padding: 8px 0 8px 20px;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itinerary-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.itinerary-dot-start { background: var(--secondary-gradient); }
+.itinerary-dot-stop { background: var(--primary-gradient); }
+.itinerary-dot-end { background: var(--primary-gradient); filter: hue-rotate(45deg); }
+

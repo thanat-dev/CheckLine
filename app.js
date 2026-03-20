@@ -7,7 +7,8 @@ let _state = {
   deposits: [],
   locations: [],
   banks: [],
-  settings: {}
+  settings: {},
+  todayPlan: []
 };
 
 // Map variables
@@ -689,6 +690,8 @@ function renderDashboard() {
   const moveBtn = document.getElementById('move-pending-btn');
   if (moveBtn) moveBtn.style.display = pendingOld.length > 0 ? 'block' : 'none';
 
+  renderTodayPlan();
+
   document.getElementById('stat-pending-col').textContent = cols.filter(c => c.status === 'pending' || c.status === 'traveling').length;
   document.getElementById('stat-pending-dep').textContent = deps.filter(d => d.status === 'pending').length;
 
@@ -1207,6 +1210,124 @@ function generateSelectedItinerary() {
 
   closeModal('itinerary-selector');
   showCopyModal(msg);
+  
+  // Save to todayPlan state and render on Dashboard
+  _state.todayPlan = selectedTasks;
+  localStorage.setItem('cl_today_plan', JSON.stringify(selectedTasks));
+  renderTodayPlan();
+}
+
+function renderTodayPlan() {
+  const container = document.getElementById('today-plan-container');
+  const content = document.getElementById('today-plan-content');
+  const totalDistEl = document.getElementById('today-total-distance');
+  
+  if (!container || !content) return;
+
+  // Try to load from localStorage if state is empty (e.g. on refresh)
+  if (_state.todayPlan.length === 0) {
+    const saved = localStorage.getItem('cl_today_plan');
+    if (saved) {
+      try {
+        _state.todayPlan = JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved today plan');
+      }
+    }
+  }
+
+  if (_state.todayPlan.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  
+  let html = '';
+  let totalDist = 0;
+  let currentLat = BASE_LAT;
+  let currentLng = BASE_LNG;
+
+  // 1. Initial Leg: Base to First Stop
+  const first = _state.todayPlan[0];
+  const firstLocData = getZoneData(first.location || first._label);
+  const firstLat = first.lat || firstLocData.lat;
+  const firstLng = first.lng || firstLocData.lng;
+  
+  let d0 = 0;
+  if (firstLat && firstLng) {
+    d0 = calculateDistance(BASE_LAT, BASE_LNG, firstLat, firstLng);
+    totalDist += d0;
+  }
+
+  html += `
+    <div style="display:flex; flex-direction:column; gap:5px">
+      <div class="itinerary-stop">
+        <div class="itinerary-dot itinerary-dot-start">S</div>
+        <div style="flex:1; font-weight:600">${BASE_NAME} (เริ่มต้น)</div>
+      </div>
+      <div class="itinerary-step">
+        🚗 ${d0.toFixed(2)} กม.
+      </div>
+  `;
+
+  // 2. Sequential Stops
+  for (let i = 0; i < _state.todayPlan.length; i++) {
+    const task = _state.todayPlan[i];
+    const locData = getZoneData(task.location || task._label);
+    const lat = task.lat || locData.lat;
+    const lng = task.lng || locData.lng;
+    
+    html += `
+      <div class="itinerary-stop">
+        <div class="itinerary-dot itinerary-dot-stop">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-weight:600">${task._label}</div>
+          <div style="font-size:0.75rem; color:var(--text-dim)">${task._zone}</div>
+        </div>
+      </div>
+    `;
+
+    if (i < _state.todayPlan.length - 1) {
+      const nextTask = _state.todayPlan[i+1];
+      const nextLocData = getZoneData(nextTask.location || nextTask._label);
+      const nextLat = nextTask.lat || nextLocData.lat;
+      const nextLng = nextTask.lng || nextLocData.lng;
+      
+      let d = 0;
+      if (lat && lng && nextLat && nextLng) {
+        d = calculateDistance(lat, lng, nextLat, nextLng);
+        totalDist += d;
+      }
+      
+      html += `
+        <div class="itinerary-step">
+          🚗 ${d.toFixed(2)} กม.
+        </div>
+      `;
+    } else {
+      // 3. Final Leg: Last Stop back to Base
+      let dEnd = 0;
+      if (lat && lng) {
+        dEnd = calculateDistance(lat, lng, BASE_LAT, BASE_LNG);
+        totalDist += dEnd;
+      }
+      
+      html += `
+        <div class="itinerary-step">
+          🚗 ${dEnd.toFixed(2)} กม.
+        </div>
+        <div class="itinerary-stop">
+          <div class="itinerary-dot itinerary-dot-end">E</div>
+          <div style="flex:1; font-weight:600">${BASE_NAME} (กลับโรงงาน)</div>
+        </div>
+      `;
+    }
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+  if (totalDistEl) totalDistEl.textContent = totalDist.toFixed(2) + ' กม.';
 }
 
 async function getBatteryStatus() {

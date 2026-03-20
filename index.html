@@ -102,8 +102,25 @@
     
     <!-- ============ SMART TRIP PLANNING (DASHBOARD) ============ -->
     <div id="dashboard-proximity-container" style="display:none; margin-bottom:20px">
-      <div class="section-title">🎯 แผนการเดินทางวันนี้ (เริ่มจากโรงงาน)</div>
+      <div class="section-title">🎯 แนะนำแผนการเดินทาง (เริ่มจากโรงงาน)</div>
       <div id="dashboard-proximity-content"></div>
+    </div>
+
+    <!-- ============ TODAY'S SELECTED PLAN (DASHBOARD) ============ -->
+    <div id="today-plan-container" style="display:none; margin-bottom:20px">
+      <div class="card" style="border-left: 6px solid #6366f1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+          <div class="section-title" style="margin:0">📅 สรุปแผนการเดินทางวันนี้</div>
+          <button class="btn btn-ghost btn-sm" onclick="openItinerarySelector()">✏️ แก้ไข</button>
+        </div>
+        <div id="today-plan-content">
+          <!-- Sequential distance list will be rendered here -->
+        </div>
+        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border-color); display:flex; justify-content:space-between; align-items:center">
+          <div style="font-weight:bold; color:var(--text-main)">รวมระยะทางทั้งสิ้น:</div>
+          <div id="today-total-distance" style="font-size:1.2rem; font-weight:800; color:var(--accent-primary)">0.00 กม.</div>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:20px">
