@@ -780,6 +780,23 @@ async function fetchBkkInvoices() {
   }
 }
 
+async function hideInvoice(ivNumber) {
+  if (!confirm(`ยืนยันการลบ/ซ่อนรายการ ${ivNumber} ออกจากหน้าจอนี้?`)) return;
+  const settings = getSettings();
+  let hidden = [];
+  try {
+    if (settings.hidden_invoices) hidden = JSON.parse(settings.hidden_invoices);
+  } catch(e) {}
+  
+  if (!hidden.includes(ivNumber)) {
+    hidden.push(ivNumber);
+  }
+  
+  await saveSettingApi({ hidden_invoices: JSON.stringify(hidden) });
+  toast(`ซ่อนรายการ ${ivNumber} เรียบร้อยแล้ว`, 'success');
+  renderInvoices();
+}
+
 async function renderInvoices() {
   const container = document.getElementById('invoices-container');
   const empty = document.getElementById('invoices-empty');
@@ -799,15 +816,28 @@ async function renderInvoices() {
     return;
   }
   
-  empty.style.display = 'none';
+  const settings = getSettings();
+  let hiddenInvoices = [];
+  try {
+    if (settings.hidden_invoices) hiddenInvoices = JSON.parse(settings.hidden_invoices);
+  } catch(e) {}
   
   let totalAmt = 0;
+  let validHospCount = 0;
   let html = '';
   
   data.forEach(item => {
     const hosp = item.hosp;
     const d = item.data;
-    totalAmt += d.total;
+    
+    // Filter out hidden invoices
+    const visibleInvoices = d.invoices.filter(iv => !hiddenInvoices.includes(iv.iv_clean));
+    if (visibleInvoices.length === 0) return; // Skip if all invoices are hidden
+    
+    // Recalculate total for this hospital
+    const newTotal = visibleInvoices.reduce((sum, iv) => sum + iv.amount, 0);
+    totalAmt += newTotal;
+    validHospCount++;
     
     html += `<div class="card" style="margin-bottom:15px; padding:15px">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px">
@@ -816,7 +846,7 @@ async function renderInvoices() {
           <small style="color:var(--text-dim)">ระยะทาง ${d.dist.toFixed(1)} กม.</small>
         </div>
         <div style="text-align:right">
-          <div style="font-weight:bold; color:var(--text-main); font-size:1.1rem">ยอดรวม ${fmt(d.total)} บาท</div>
+          <div style="font-weight:bold; color:var(--text-main); font-size:1.1rem">ยอดรวม ${fmt(newTotal)} บาท</div>
           <button class="btn btn-primary btn-sm" style="margin-top:5px" onclick="createCollectionFromInvoice('${hosp.replace(/'/g, "\\'")}', ${d.dist})">📍 สร้างงานรับเช็ค</button>
         </div>
       </div>
@@ -828,15 +858,19 @@ async function renderInvoices() {
               <th>วันที่</th>
               <th>อายุหนี้</th>
               <th style="text-align:right">จำนวนเงิน</th>
+              <th style="text-align:center; width:60px;">ลบ</th>
             </tr>
           </thead>
           <tbody>
-            ${d.invoices.map(iv => `
+            ${visibleInvoices.map(iv => `
               <tr>
-                <td>${iv.iv_clean}</td>
-                <td>${iv.date}</td>
-                <td>${iv.bucket}</td>
-                <td style="text-align:right">${fmt(iv.amount)}</td>
+                <td data-label="เลขที่ IV">${iv.iv_clean}</td>
+                <td data-label="วันที่">${iv.date}</td>
+                <td data-label="อายุหนี้">${iv.bucket}</td>
+                <td data-label="จำนวนเงิน" style="text-align:right">${fmt(iv.amount)}</td>
+                <td data-label="ลบ" style="text-align:center">
+                  <button class="btn btn-ghost btn-sm" style="padding:0 8px; color:var(--danger)" onclick="hideInvoice('${iv.iv_clean}')" title="ลบ/ซ่อนรายการนี้">❌</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -845,9 +879,16 @@ async function renderInvoices() {
     </div>`;
   });
   
+  if (html === '') {
+    empty.querySelector('.empty-text').textContent = 'ไม่มีบิลตั้งเบิกค้างชำระ';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+  }
+  
   container.innerHTML = html;
   document.getElementById('inv-total-amount').textContent = fmt(totalAmt) + ' บาท';
-  document.getElementById('inv-total-hosps').textContent = data.length + ' แห่ง';
+  document.getElementById('inv-total-hosps').textContent = validHospCount + ' แห่ง';
 }
 
 function createCollectionFromInvoice(hospName, dist) {

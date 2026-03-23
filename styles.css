@@ -430,6 +430,11 @@ tr:hover td { background: var(--glass-hover); border-color: rgba(99, 102, 241, 0
     border: none !important;
   }
   
+  tr.inline-map-row td {
+    display: block !important;
+    padding: 0 !important;
+  }
+  
   td::before { 
     content: attr(data-label);
     font-size: 0.75rem !important; 
