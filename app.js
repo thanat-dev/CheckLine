@@ -152,7 +152,7 @@ const ZONE_MAP = {
   'โรงพยาบาลกลาง': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.746389, lng: 100.509444, address: '514 ถ.หลวง แขวงป้อมปราบ เขตป้อมปราบศัตรูพ่าย กรุงเทพมหานคร 10100' },
   'กรมแผนที่ทหาร': { zone: 'Zone 7: รามคำแหง / สมุทรปราการ', order: 7, lat: 13.792762681928684, lng: 100.59635918952853, address: '1770 ถนนลาดพร้าว เขตวังทองหลาง แขวงวังทองหลาง กรุงเทพฯ 10310' },
   'มูลนิธิราชประชานุเคราะห์ ในพระบรมราชูปถัมภ์': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.7550, lng: 100.5000, address: '1034 ถ.กรุงเกษม แขวงคลองมหานาค เขตป้อมปราบศัตรูพ่าย กรุงเทพมหานคร 10100' },
-  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.771609415472867, lng: 100.51948421494356, address: 'อาคารชัยพัฒนา สวนจิตรลดา ถนนราชวิถี เขตดุสิต กรุงเทพมหานคร 10303' },
+  'กองงานในพระองค์สมเด็จพระกนิษฐาธิราชเจ้ากรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี': { zone: 'Zone 4: พระนคร / ดุสิต', order: 3, lat: 13.771605534641719, lng: 100.51948264605969, address: 'อาคารชัยพัฒนา สวนจิตรลดา ถ. ราชวิถี แขวงสวนจิตรลดา เขตดุสิต กรุงเทพมหานคร 10303' },
 
   'ธนาคารทีทีบี สำนักงานใหญ่พหลโยธิน': { zone: 'Zone 3: จตุจักร / บางซื่อ / พหลโยธิน / งามวงศ์วาน / นนทบุรี', order: 4, lat: 13.804, lng: 100.560, address: '3000 ถนนพหลโยธิน แขวงจอมพล เขตจตุจักร กรุงเทพมหาคร 10900' },
   'โรงพยาบาลวิภาวดี (กรุงเทพฯ)': { zone: 'Zone 3: จตุจักร / บางซื่อ / พหลโยธิน / งามวงศ์วาน / นนทบุรี', order: 4, lat: 13.846431, lng: 100.56252, address: '51/3 ถ.งามวงศ์วาน แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900' },
@@ -295,6 +295,7 @@ function showPage(page) {
   if (page === 'dashboard') renderDashboard();
   else if (page === 'collection') renderCollections();
   else if (page === 'deposit') renderDeposits();
+  else if (page === 'invoices') renderInvoices();
   else if (page === 'settings') {
     renderSettings();
     setTimeout(initSettingsMap, 300);
@@ -757,7 +758,7 @@ function renderDashboard() {
   const proximityContent = document.getElementById('dashboard-proximity-content');
 
   if (proximityContainer && proximityContent) {
-    if (allPending.length > 0) {
+    if (allPending.length > 0 && typeof generateProximityHtml === 'function') {
       proximityContent.innerHTML = generateProximityHtml(allPending, true);
       proximityContainer.style.display = 'block';
     } else {
@@ -765,6 +766,95 @@ function renderDashboard() {
     }
   }
   updateMapMarkers(); // Update map markers after rendering dashboard
+}
+
+// ==================== INVOICES PAGE ====================
+async function fetchBkkInvoices() {
+  try {
+    const res = await fetch('bkk_invoices.json');
+    if (!res.ok) throw new Error('Cannot fetch invoices');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function renderInvoices() {
+  const container = document.getElementById('invoices-container');
+  const empty = document.getElementById('invoices-empty');
+  
+  if (!container || !empty) return;
+  
+  container.innerHTML = '';
+  empty.style.display = 'block';
+  empty.querySelector('.empty-text').textContent = 'กำลังโหลดข้อมูล...';
+
+  const data = await fetchBkkInvoices();
+  
+  if (!data || data.length === 0) {
+    empty.querySelector('.empty-text').textContent = 'ไม่พบข้อมูลยอดตั้งเบิก';
+    document.getElementById('inv-total-amount').textContent = '0.00 บาท';
+    document.getElementById('inv-total-hosps').textContent = '0 แห่ง';
+    return;
+  }
+  
+  empty.style.display = 'none';
+  
+  let totalAmt = 0;
+  let html = '';
+  
+  data.forEach(item => {
+    const hosp = item.hosp;
+    const d = item.data;
+    totalAmt += d.total;
+    
+    html += `<div class="card" style="margin-bottom:15px; padding:15px">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px">
+        <div>
+          <h3 style="margin:0; font-size:1.1rem; color:var(--text-main)">🏥 ${hosp}</h3>
+          <small style="color:var(--text-dim)">ระยะทาง ${d.dist.toFixed(1)} กม.</small>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:bold; color:var(--text-main); font-size:1.1rem">ยอดรวม ${fmt(d.total)} บาท</div>
+          <button class="btn btn-primary btn-sm" style="margin-top:5px" onclick="createCollectionFromInvoice('${hosp.replace(/'/g, "\\'")}', ${d.dist})">📍 สร้างงานรับเช็ค</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table style="font-size:0.9rem">
+          <thead>
+            <tr>
+              <th>เลขที่ IV</th>
+              <th>วันที่</th>
+              <th>อายุหนี้</th>
+              <th style="text-align:right">จำนวนเงิน</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${d.invoices.map(iv => `
+              <tr>
+                <td>${iv.iv_clean}</td>
+                <td>${iv.date}</td>
+                <td>${iv.bucket}</td>
+                <td style="text-align:right">${fmt(iv.amount)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+  document.getElementById('inv-total-amount').textContent = fmt(totalAmt) + ' บาท';
+  document.getElementById('inv-total-hosps').textContent = data.length + ' แห่ง';
+}
+
+function createCollectionFromInvoice(hospName, dist) {
+  openModal('collection');
+  document.getElementById('col-location').value = hospName;
+  autoFillCoordinates();
+  toast('กรอกชื่อสถานที่ลงฟอร์มเรียบร้อย กรุณากดบันทึก', 'success');
 }
 
 // ==================== SETTINGS ====================

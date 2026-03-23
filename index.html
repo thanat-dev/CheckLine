@@ -20,6 +20,7 @@
       <button class="nav-link active" onclick="showPage('dashboard')" id="nav-dashboard">🏠 หน้าหลัก</button>
       <button class="nav-link" onclick="showPage('collection')" id="nav-collection">📍 รับเช็ค</button>
       <button class="nav-link" onclick="showPage('deposit')" id="nav-deposit">🏦 นำฝากเช็ค</button>
+      <button class="nav-link" onclick="showPage('invoices')" id="nav-invoices">📄 ยอด (IV) ที่ยังไม่ได้รับ</button>
       <button class="nav-link" onclick="showPage('settings')" id="nav-settings">⚙️ ตั้งค่า</button>
     </div>
   </nav>
@@ -37,6 +38,10 @@
     <button class="bottom-nav-link" onclick="showPage('deposit')" id="m-nav-deposit">
       <span class="m-nav-icon">🏦</span>
       <span class="m-nav-label">ฝากเช็ค</span>
+    </button>
+    <button class="bottom-nav-link" onclick="showPage('invoices')" id="m-nav-invoices">
+      <span class="m-nav-icon">📄</span>
+      <span class="m-nav-label">ยอด (IV)</span>
     </button>
     <button class="bottom-nav-link" onclick="showPage('settings')" id="m-nav-settings">
       <span class="m-nav-icon">⚙️</span>
@@ -237,6 +242,33 @@
         <div class="empty-text">ยังไม่มีงานนำฝากเช็ค</div><button class="btn btn-primary"
           onclick="openModal('deposit')">+ เพิ่มงานแรก</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ INVOICES PAGE ============ -->
+  <div class="main page" id="page-invoices" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <h1 class="section-title" style="margin:0">📄 ยอด (IV) ที่ยังไม่ได้รับเช็ค (กทม.)</h1>
+      <button class="btn btn-ghost" onclick="renderInvoices()"><span style="font-size:1.2rem">🔄</span> โหลดใหม่</button>
+    </div>
+    
+    <div class="card" style="margin-bottom: 20px; background: rgba(14, 165, 233, 0.05); border-left: 4px solid var(--accent-primary);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="margin:0; font-size:1.1rem; color:var(--text-main)">ยอดยกมาทั้งหมด</h3>
+          <small style="color:var(--text-dim)">จำนวนสถานพยาบาลที่มีหนี้คงค้าง</small>
+        </div>
+        <div style="text-align:right">
+          <div id="inv-total-amount" style="font-size:1.25rem; font-weight:bold; color:var(--accent-primary)">0.00 บาท</div>
+          <small id="inv-total-hosps" style="color:var(--text-dim)">0 แห่ง</small>
+        </div>
+      </div>
+    </div>
+
+    <div id="invoices-container"></div>
+    <div class="empty-state" id="invoices-empty" style="display:none">
+      <div class="empty-icon">📂</div>
+      <div class="empty-text">กำลังโหลดข้อมูล...</div>
     </div>
   </div>
 
