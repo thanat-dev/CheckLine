@@ -822,6 +822,9 @@ async function renderInvoices() {
     if (settings.hidden_invoices) hiddenInvoices = JSON.parse(settings.hidden_invoices);
   } catch(e) {}
   
+  const searchInput = document.getElementById('filter-inv-search');
+  const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
   let totalAmt = 0;
   let validHospCount = 0;
   let html = '';
@@ -830,9 +833,19 @@ async function renderInvoices() {
     const hosp = item.hosp;
     const d = item.data;
     
-    // Filter out hidden invoices
-    const visibleInvoices = d.invoices.filter(iv => !hiddenInvoices.includes(iv.iv_clean));
-    if (visibleInvoices.length === 0) return; // Skip if all invoices are hidden
+    // Filter out hidden invoices and apply search filter
+    const visibleInvoices = d.invoices.filter(iv => {
+      if (hiddenInvoices.includes(iv.iv_clean)) return false;
+      if (!term) return true;
+      
+      const matchIv = iv.iv_clean.toLowerCase().includes(term);
+      const matchAmt = iv.amount.toString().includes(term) || fmt(iv.amount).includes(term);
+      const matchHosp = hosp.toLowerCase().includes(term);
+      
+      return matchIv || matchAmt || matchHosp;
+    });
+    
+    if (visibleInvoices.length === 0) return; // Skip if all invoices are hidden or filtered out
     
     // Recalculate total for this hospital
     const newTotal = visibleInvoices.reduce((sum, iv) => sum + iv.amount, 0);
