@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
@@ -242,7 +242,24 @@ const initDb = async () => {
     }
 };
 
-initDb();
+// Initialize DB with retry logic - server stays alive even if DB fails
+const initDbWithRetry = async (retries = 5, delay = 3000) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            await initDb();
+            return; // success
+        } catch (err) {
+            console.error(`DB init attempt ${i + 1}/${retries} failed:`, err.message);
+            if (i < retries - 1) {
+                console.log(`Retrying in ${delay / 1000}s...`);
+                await new Promise(res => setTimeout(res, delay));
+            }
+        }
+    }
+    console.error('All DB init attempts failed. Server will continue but DB operations will fail.');
+};
+
+initDbWithRetry();
 
 // --- API ENDPOINTS ---
 
