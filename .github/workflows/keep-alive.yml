@@ -1,0 +1,22 @@
+name: Keep Alive - Ping API to prevent Supabase pause
+
+on:
+  schedule:
+    # รัน UTC 01:00 ทุก 5 วัน (วันที่ 1, 6, 11, 16, 21, 26)
+    - cron: '0 1 1,6,11,16,21,26 * *'
+  workflow_dispatch: # ให้กด run เองได้ด้วย
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping CheckLine API (keeps Supabase DB active)
+        run: |
+          echo "🔔 Pinging CheckLine API at $(date)"
+          
+          # Ping หลายๆ endpoint เพื่อให้ DB มี activity
+          curl -sf https://checkline-0.onrender.com/api/collections > /dev/null && echo "✅ /api/collections OK" || echo "⚠️ /api/collections failed"
+          curl -sf https://checkline-0.onrender.com/api/locations > /dev/null && echo "✅ /api/locations OK" || echo "⚠️ /api/locations failed"
+          curl -sf https://checkline-0.onrender.com/api/banks > /dev/null && echo "✅ /api/banks OK" || echo "⚠️ /api/banks failed"
+          
+          echo "✅ Keep-alive ping completed at $(date)"
